@@ -3,8 +3,8 @@
 后续配置时按这个顺序操作：
 
 1. 在 Supabase 新建项目。
-2. 打开 SQL Editor，执行 `supabase/migrations/0001_initial.sql`。
-3. 在 Storage 创建三个 private bucket：
+2. 依次执行 `supabase/migrations` 下的 SQL 迁移。
+3. Storage private bucket 会由 `0002_storage_and_policy_hardening.sql` 创建：
    - `diary-images-private`
    - `diary-user-audios-private`
    - `diary-ai-audios-private`

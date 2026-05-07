@@ -5,8 +5,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { Panel, Shell } from "@/components/ui";
+import { authFetch } from "@/lib/api-client";
 import { demoDate, demoDiary } from "@/lib/demo-data";
-import { listDiaries } from "@/lib/local-diary";
 import type { DiarySummary } from "@/lib/types";
 
 function monthKey(date: Date) {
@@ -26,8 +26,9 @@ function getCalendarCells(cursor: Date) {
 export default function CalendarPage() {
   const [cursor, setCursor] = useState(() => new Date(2026, 4, 1));
   const [today, setToday] = useState(demoDate);
-  const [diaries, setDiaries] = useState<DiarySummary[]>([demoDiary]);
+  const [diaries, setDiaries] = useState<DiarySummary[]>([]);
   const [selectedDate, setSelectedDate] = useState(demoDate);
+  const [message, setMessage] = useState("");
   const cells = useMemo(() => getCalendarCells(cursor), [cursor]);
   const currentMonth = monthKey(cursor);
 
@@ -48,10 +49,44 @@ export default function CalendarPage() {
     const nextToday = now.toISOString().slice(0, 10);
     setToday(nextToday);
     setCursor(new Date(now.getFullYear(), now.getMonth(), 1));
-    const saved = listDiaries();
-    setDiaries(saved);
-    setSelectedDate(saved[0]?.date ?? nextToday);
   }, []);
+
+  useEffect(() => {
+    authFetch<{
+      days: Array<{
+        date: string;
+        items: Array<{
+          diary_id: string;
+          title: string;
+          summary: string;
+          cover_image_url: string;
+          created_at: string;
+          event_tag?: string;
+          mood_tag?: string;
+        }>;
+      }>;
+    }>(`/api/calendar?month=${currentMonth}`)
+      .then((data) => {
+        const next = data.days.flatMap((day) =>
+          day.items.map((item) => ({
+            id: item.diary_id,
+            title: item.title,
+            summary: item.summary,
+            content: "",
+            date: day.date,
+            createdAt: item.created_at,
+            imageUrl: item.cover_image_url,
+            eventTag: item.event_tag,
+            moodTag: item.mood_tag,
+            status: "generated" as const,
+            messages: []
+          }))
+        );
+        setDiaries(next);
+        setSelectedDate((current) => (next.some((diary) => diary.date === current) ? current : next[0]?.date ?? today));
+      })
+      .catch((err) => setMessage(err instanceof Error ? err.message : "读取日历失败。"));
+  }, [currentMonth, today]);
 
   return (
     <Shell>
@@ -115,6 +150,7 @@ export default function CalendarPage() {
         <aside className="rounded-3xl border border-white/10 bg-surface-dim/60 p-5">
           <p className="text-sm text-on-surface-variant">{selectedDate}</p>
           <h3 className="mt-1 font-serif text-2xl text-primary">{selectedDiaries.length} 篇日记</h3>
+          {message ? <p className="mt-3 rounded-2xl bg-surface-container px-4 py-3 text-sm text-on-surface-variant">{message}</p> : null}
           <div className="mt-5 space-y-4">
             {selectedDiaries.length > 0 ? selectedDiaries.map((diary) => (
               <Link

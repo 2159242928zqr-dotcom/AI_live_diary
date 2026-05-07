@@ -6,25 +6,21 @@ import { ArrowLeft, Mic, Send, Square, Timer } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { GhostLink, GlowButton, inputClass, Panel, Shell } from "@/components/ui";
 import { VoiceWave } from "@/components/voice-wave";
-import { demoDiary } from "@/lib/demo-data";
-import { getCurrentDraft, getCurrentDiaryImage, markDraftChatting, saveCurrentDiary } from "@/lib/local-diary";
+import { authFetch } from "@/lib/api-client";
 import type { DiaryMessage } from "@/lib/types";
 
 const maxSeconds = 10 * 60;
-const aiReplies = [
-  "我听到了。这个片段里似乎有一些值得慢慢整理的感受，你愿意再多讲一点当时发生了什么吗？",
-  "这张照片像是替你留住了一个停顿。那个瞬间里，你最想记住的是什么？",
-  "我会把这些细节先收好。还有没有一个人、一句话，或者一种气味，是和这张照片绑在一起的？"
-];
+const makeTempId = () => `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 export default function ChatPage() {
   const router = useRouter();
   const params = useParams<{ diaryId: string }>();
-  const [messages, setMessages] = useState<DiaryMessage[]>(demoDiary.messages.slice(0, 1));
+  const [messages, setMessages] = useState<DiaryMessage[]>([]);
   const [text, setText] = useState("");
   const [recording, setRecording] = useState(false);
   const [aiSpeaking, setAiSpeaking] = useState(false);
-  const [diaryImage, setDiaryImage] = useState(demoDiary.imageUrl ?? "");
+  const [diaryImage, setDiaryImage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [secondsLeft, setSecondsLeft] = useState(maxSeconds);
   const [notice, setNotice] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -38,11 +34,16 @@ export default function ChatPage() {
   }, [secondsLeft]);
 
   useEffect(() => {
-    const draft = markDraftChatting();
-    setDiaryImage(draft?.imageUrl || getCurrentDiaryImage());
-    if (!draft && params.diaryId !== "demo-diary") {
-      setNotice("未找到上传图片，已载入演示日记。你也可以返回重新上传。");
-    }
+    setIsLoading(true);
+    authFetch<{ image_url: string; messages: DiaryMessage[]; status: string }>(`/api/diaries/${params.diaryId}/start`, {
+      method: "POST"
+    })
+      .then((data) => {
+        setDiaryImage(data.image_url || "");
+        setMessages(data.messages);
+      })
+      .catch((err) => setNotice(err instanceof Error ? err.message : "载入日记失败，请返回重新上传。"))
+      .finally(() => setIsLoading(false));
   }, [params.diaryId]);
 
   useEffect(() => {
@@ -60,34 +61,35 @@ export default function ChatPage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  function appendAssistantReply() {
-    setAiSpeaking(true);
-    window.setTimeout(() => {
-      setMessages((current) => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          inputType: "ai_voice",
-          transcript: aiReplies[current.length % aiReplies.length],
-          audioUrl: "",
-          createdAt: new Date().toISOString()
-        }
-      ]);
-      setAiSpeaking(false);
-    }, 900);
-  }
-
-  function sendText(event: FormEvent) {
+  async function sendText(event: FormEvent) {
     event.preventDefault();
     const trimmed = text.trim();
     if (!trimmed || locked || secondsLeft === 0) return;
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: "user", inputType: "text", text: trimmed, createdAt: new Date().toISOString() }
-    ]);
+    const tempId = makeTempId();
+    const optimisticMessage: DiaryMessage = {
+      id: tempId,
+      role: "user",
+      inputType: "text",
+      text: trimmed,
+      createdAt: new Date().toISOString()
+    };
+
+    setMessages((current) => [...current, optimisticMessage]);
+    setAiSpeaking(true);
     setText("");
-    appendAssistantReply();
+    try {
+      const data = await authFetch<{ messages: DiaryMessage[] }>(`/api/diaries/${params.diaryId}/messages/text`, {
+        method: "POST",
+        body: JSON.stringify({ content: trimmed })
+      });
+      setMessages((current) => current.flatMap((message) => (message.id === tempId ? data.messages : [message])));
+    } catch (err) {
+      setMessages((current) => current.filter((message) => message.id !== tempId));
+      setNotice(err instanceof Error ? err.message : "发送失败。");
+      setText(trimmed);
+    } finally {
+      setAiSpeaking(false);
+    }
   }
 
   async function startRecording() {
@@ -105,21 +107,8 @@ export default function ChatPage() {
       };
       recorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
-        const audioBlob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setMessages((current) => [
-          ...current,
-          {
-            id: crypto.randomUUID(),
-            role: "user",
-            inputType: "voice",
-            transcript: "用户录制了一段语音。接入语音转文字后这里会保存真实转写。",
-            audioUrl,
-            createdAt: new Date().toISOString()
-          }
-        ]);
         setRecording(false);
-        appendAssistantReply();
+        setNotice("语音持久化和转写将在下一阶段接入，这一版请先用文字保存到数据库。");
       };
       recorder.start();
       setRecording(true);
@@ -142,9 +131,15 @@ export default function ChatPage() {
     void startRecording();
   }
 
-  function generateDiary() {
-    const diary = saveCurrentDiary(messages);
-    router.push(`/diaries/${diary.id}`);
+  async function generateDiary() {
+    try {
+      const diary = await authFetch<{ diary_id: string; status: string }>(`/api/diaries/${params.diaryId}/generate`, {
+        method: "POST"
+      });
+      router.push(`/diaries/${diary.diary_id}`);
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "生成日记失败。");
+    }
   }
 
   return (
@@ -162,14 +157,21 @@ export default function ChatPage() {
         <div className="grid flex-1 gap-0 lg:grid-cols-[280px_1fr]">
           <aside className="border-b border-white/10 p-4 lg:border-b-0 lg:border-r">
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-surface-dim">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="日记图片缩略图" className="h-52 w-full object-cover" src={diaryImage} />
+              {diaryImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img alt="日记图片缩略图" className="h-52 w-full object-cover" src={diaryImage} />
+              ) : (
+                <div className="flex h-52 w-full items-center justify-center text-sm text-on-surface-variant">
+                  {isLoading ? "正在载入图片..." : "没有图片"}
+                </div>
+              )}
             </div>
             {notice ? <p className="mt-4 rounded-2xl bg-surface-dim px-4 py-3 text-sm text-on-surface-variant">{notice}</p> : null}
           </aside>
 
           <section className="flex min-h-[520px] flex-col">
             <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
+              {isLoading ? <p className="text-sm text-on-surface-variant">正在载入对话...</p> : null}
               {messages.map((message) => (
                 <div className={message.role === "user" ? "flex justify-end" : "flex justify-start"} key={message.id}>
                   <div className={`max-w-[82%] rounded-2xl border p-4 ${

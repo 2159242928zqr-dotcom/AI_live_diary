@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { Save, Wand2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { GhostLink, GlowButton, inputClass, Panel, Shell } from "@/components/ui";
+import { authFetch } from "@/lib/api-client";
 import { demoDiary } from "@/lib/demo-data";
-import { getTagSettings, loadSavedDiary, updateDiarySummary } from "@/lib/local-diary";
+import type { DiaryMessage, DiarySummary } from "@/lib/types";
 
 export default function EditDiaryPage() {
   const router = useRouter();
@@ -19,38 +20,51 @@ export default function EditDiaryPage() {
   const [eventTag, setEventTag] = useState("");
   const [moodTag, setMoodTag] = useState("");
   const [message, setMessage] = useState("");
+  const [diaryMessages, setDiaryMessages] = useState<DiaryMessage[]>([]);
 
   useEffect(() => {
-    const diary = loadSavedDiary(params.diaryId);
-    const settings = getTagSettings();
-    setTitle(diary.title);
-    setSummary(diary.summary);
-    setContent(diary.content);
-    setEventTags(settings.eventTags);
-    setMoodTags(settings.moodTags);
-    setEventTag(diary.eventTag || settings.eventTags[0] || "");
-    setMoodTag(diary.moodTag || settings.moodTags[0] || "");
+    Promise.all([
+      authFetch<DiarySummary>(`/api/diaries/${params.diaryId}`),
+      authFetch<{ eventTags: string[]; moodTags: string[] }>("/api/auth/profile")
+    ])
+      .then(([diary, settings]) => {
+        setTitle(diary.title);
+        setSummary(diary.summary);
+        setContent(diary.content);
+        setDiaryMessages(diary.messages);
+        setEventTags(settings.eventTags);
+        setMoodTags(settings.moodTags);
+        setEventTag(diary.eventTag || settings.eventTags[0] || "");
+        setMoodTag(diary.moodTag || settings.moodTags[0] || "");
+      })
+      .catch((err) => setMessage(err instanceof Error ? err.message : "读取日记失败。"));
   }, [params.diaryId]);
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
     if (!title.trim() || !summary.trim() || !content.trim()) {
       setMessage("标题、摘要和正文都需要填写。");
       return;
     }
-    updateDiarySummary(params.diaryId, {
-      title: title.trim(),
-      summary: summary.trim(),
-      content: content.trim(),
-      eventTag,
-      moodTag
-    });
-    router.push(`/diaries/${params.diaryId}`);
+    try {
+      await authFetch(`/api/diaries/${params.diaryId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          title: title.trim(),
+          summary: summary.trim(),
+          content: content.trim(),
+          eventTag,
+          moodTag
+        })
+      });
+      router.push(`/diaries/${params.diaryId}`);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "保存失败。");
+    }
   }
 
   function regenerate() {
-    const diary = loadSavedDiary(params.diaryId);
-    const source = diary.messages
+    const source = diaryMessages
       .filter((item) => item.role === "user")
       .map((item) => item.text || item.transcript)
       .filter(Boolean)

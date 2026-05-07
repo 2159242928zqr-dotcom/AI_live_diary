@@ -6,8 +6,7 @@ import { ArrowLeft, Edit3, Eye, EyeOff, Play, Trash2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { GhostLink, GlowButton, Panel, Shell } from "@/components/ui";
 import { VoiceWave } from "@/components/voice-wave";
-import { demoDiary } from "@/lib/demo-data";
-import { deleteDiary, loadSavedDiary } from "@/lib/local-diary";
+import { authFetch } from "@/lib/api-client";
 import type { DiarySummary } from "@/lib/types";
 import { formatDateLabel } from "@/lib/utils";
 
@@ -16,15 +15,30 @@ export default function DiaryDetailPage() {
   const params = useParams<{ diaryId: string }>();
   const [showTranscript, setShowTranscript] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [diary, setDiary] = useState<DiarySummary>(demoDiary);
+  const [diary, setDiary] = useState<DiarySummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    setDiary(loadSavedDiary(params.diaryId));
+    setIsLoading(true);
+    authFetch<DiarySummary>(`/api/diaries/${params.diaryId}`)
+      .then((data) => {
+        setDiary(data);
+        setMessage("");
+      })
+      .catch((err) => setMessage(err instanceof Error ? err.message : "读取日记失败。"))
+      .finally(() => setIsLoading(false));
   }, [params.diaryId]);
 
-  function confirmDelete() {
-    deleteDiary(diary.id);
-    router.push("/calendar");
+  async function confirmDelete() {
+    if (!diary) return;
+    try {
+      await authFetch(`/api/diaries/${diary.id}`, { method: "DELETE" });
+      router.push("/calendar");
+    } catch (err) {
+      setConfirming(false);
+      setMessage(err instanceof Error ? err.message : "删除失败。");
+    }
   }
 
   function playTranscript(text?: string) {
@@ -42,59 +56,84 @@ export default function DiaryDetailPage() {
         <div className="grid gap-0 lg:grid-cols-[330px_1fr]">
           <aside className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r">
             <GhostLink href="/calendar"><ArrowLeft size={16} />返回日历</GhostLink>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt="日记图片" className="mt-5 aspect-[4/5] w-full rounded-3xl object-cover" src={diary.imageUrl || ""} />
+            {diary?.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img alt="日记图片" className="mt-5 aspect-[4/5] w-full rounded-3xl object-cover" src={diary.imageUrl} />
+            ) : (
+              <div className="mt-5 flex aspect-[4/5] w-full items-center justify-center rounded-3xl border border-white/10 bg-surface-dim text-sm text-on-surface-variant">
+                {isLoading ? "正在载入图片..." : "没有图片"}
+              </div>
+            )}
           </aside>
           <article className="p-5 sm:p-8">
-            <p className="text-sm text-tertiary">{formatDateLabel(diary.createdAt)}</p>
-            <h2 className="mt-2 font-serif text-4xl font-bold text-primary">{diary.title}</h2>
-            <TagRow eventTag={diary.eventTag} moodTag={diary.moodTag} />
-            <p className="mt-4 rounded-2xl border border-white/10 bg-surface-dim/70 p-4 text-on-surface-variant">{diary.summary}</p>
-            <div className="prose prose-invert mt-6 max-w-none text-on-surface">
-              <p>{diary.content}</p>
-            </div>
+            {isLoading ? (
+              <div className="space-y-4">
+                <div className="h-5 w-28 rounded-full bg-surface-dim" />
+                <div className="h-12 w-3/4 rounded-2xl bg-surface-dim" />
+                <div className="h-24 rounded-2xl bg-surface-dim/70" />
+              </div>
+            ) : diary ? (
+              <>
+                <p className="text-sm text-tertiary">{formatDateLabel(diary.createdAt)}</p>
+                <h2 className="mt-2 font-serif text-4xl font-bold text-primary">{diary.title}</h2>
+                <TagRow eventTag={diary.eventTag} moodTag={diary.moodTag} />
+              </>
+            ) : null}
+            {message ? <p className="mt-4 rounded-2xl bg-surface-dim px-4 py-3 text-sm text-on-surface-variant">{message}</p> : null}
+            {diary ? (
+              <>
+                <p className="mt-4 rounded-2xl border border-white/10 bg-surface-dim/70 p-4 text-on-surface-variant">{diary.summary}</p>
+                <div className="prose prose-invert mt-6 max-w-none text-on-surface">
+                  <p>{diary.content}</p>
+                </div>
+              </>
+            ) : null}
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <GlowButton onClick={() => setShowTranscript((value) => !value)}>
-                {showTranscript ? <EyeOff size={18} /> : <Eye size={18} />}
-                {showTranscript ? "隐藏转文本" : "显示转文本"}
-              </GlowButton>
-              <GhostLink href={`/diaries/${diary.id}/edit`}><Edit3 size={16} />编辑日记</GhostLink>
-              <button
-                className="inline-flex items-center gap-2 rounded-xl border border-red-300/20 px-4 py-2 text-sm text-red-200 transition hover:bg-red-500/10"
-                onClick={() => setConfirming(true)}
-              >
-                <Trash2 size={16} />
-                删除日记
-              </button>
-            </div>
+            {diary ? (
+              <div className="mt-8 flex flex-wrap gap-3">
+                <GlowButton onClick={() => setShowTranscript((value) => !value)}>
+                  {showTranscript ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showTranscript ? "隐藏转文本" : "显示转文本"}
+                </GlowButton>
+                <GhostLink href={`/diaries/${diary.id}/edit`}><Edit3 size={16} />编辑日记</GhostLink>
+                <button
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-300/20 px-4 py-2 text-sm text-red-200 transition hover:bg-red-500/10"
+                  onClick={() => setConfirming(true)}
+                >
+                  <Trash2 size={16} />
+                  删除日记
+                </button>
+              </div>
+            ) : null}
 
-            <section className="mt-8 space-y-4">
-              <h3 className="font-serif text-2xl text-primary">原始聊天记录</h3>
-              {diary.messages.map((message) => (
-                <div className="rounded-2xl border border-white/10 bg-surface-dim/70 p-4" key={message.id}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm text-on-surface-variant">{message.role === "assistant" ? "AI 语音" : message.inputType === "text" ? "用户文字" : "用户语音"}</p>
-                      {message.inputType === "text" ? <p className="mt-2 text-on-surface">{message.text}</p> : <VoiceWave />}
+            {diary ? (
+              <section className="mt-8 space-y-4">
+                <h3 className="font-serif text-2xl text-primary">原始聊天记录</h3>
+                {diary.messages.map((message) => (
+                  <div className="rounded-2xl border border-white/10 bg-surface-dim/70 p-4" key={message.id}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm text-on-surface-variant">{message.role === "assistant" ? "AI 语音" : message.inputType === "text" ? "用户文字" : "用户语音"}</p>
+                        {message.inputType === "text" ? <p className="mt-2 text-on-surface">{message.text}</p> : <VoiceWave />}
+                      </div>
+                      {message.inputType !== "text" ? (
+                        <button
+                          aria-label="播放语音"
+                          className="inline-flex size-11 items-center justify-center rounded-full bg-secondary-container/60 text-secondary"
+                          onClick={() => playTranscript(message.transcript)}
+                          type="button"
+                        >
+                          <Play size={18} />
+                        </button>
+                      ) : null}
                     </div>
-                    {message.inputType !== "text" ? (
-                      <button
-                        aria-label="播放语音"
-                        className="inline-flex size-11 items-center justify-center rounded-full bg-secondary-container/60 text-secondary"
-                        onClick={() => playTranscript(message.transcript)}
-                        type="button"
-                      >
-                        <Play size={18} />
-                      </button>
+                    {showTranscript && message.transcript ? (
+                      <p className="mt-3 rounded-xl bg-surface-container px-4 py-3 text-sm text-on-surface-variant">{message.transcript}</p>
                     ) : null}
                   </div>
-                  {showTranscript && message.transcript ? (
-                    <p className="mt-3 rounded-xl bg-surface-container px-4 py-3 text-sm text-on-surface-variant">{message.transcript}</p>
-                  ) : null}
-                </div>
-              ))}
-            </section>
+                ))}
+              </section>
+            ) : null}
           </article>
         </div>
       </Panel>

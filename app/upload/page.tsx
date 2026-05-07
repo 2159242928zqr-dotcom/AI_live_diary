@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ImagePlus, RefreshCcw, Sparkles } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { GhostLink, GlowButton, inputClass, Panel, Shell } from "@/components/ui";
-import { createDraft, getTagSettings } from "@/lib/local-diary";
+import { authFetch } from "@/lib/api-client";
 
 const maxBytes = 10 * 1024 * 1024;
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -58,11 +58,14 @@ export default function UploadPage() {
   const canStart = useMemo(() => Boolean(preview && !error), [preview, error]);
 
   useEffect(() => {
-    const settings = getTagSettings();
-    setEventTags(settings.eventTags);
-    setMoodTags(settings.moodTags);
-    setEventTag(settings.eventTags[0] ?? "");
-    setMoodTag(settings.moodTags[0] ?? "");
+    authFetch<{ eventTags: string[]; moodTags: string[] }>("/api/auth/profile")
+      .then((settings) => {
+        setEventTags(settings.eventTags);
+        setMoodTags(settings.moodTags);
+        setEventTag(settings.eventTags[0] ?? "");
+        setMoodTag(settings.moodTags[0] ?? "");
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "读取标签失败。"));
   }, []);
 
   function onFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -94,11 +97,27 @@ export default function UploadPage() {
     handleFile(event.dataTransfer.files?.[0]);
   }
 
-  function start() {
+  async function start() {
     if (!canStart) return;
     setIsStarting(true);
-    const draft = createDraft(preview, { title, eventTag, moodTag });
-    window.setTimeout(() => router.push(`/chat/${draft.id}`), 420);
+    setError("");
+    try {
+      const draft = await authFetch<{ diary_id: string; status: string }>("/api/diaries", {
+        method: "POST",
+        body: JSON.stringify({ title, eventTag, moodTag })
+      });
+      const blob = await (await fetch(preview)).blob();
+      const form = new FormData();
+      form.append("image", blob, "diary.jpg");
+      await authFetch(`/api/diaries/${draft.diary_id}/image`, {
+        method: "POST",
+        body: form
+      });
+      window.setTimeout(() => router.push(`/chat/${draft.diary_id}`), 420);
+    } catch (err) {
+      setIsStarting(false);
+      setError(err instanceof Error ? err.message : "创建日记失败。");
+    }
   }
 
   function resetUpload() {

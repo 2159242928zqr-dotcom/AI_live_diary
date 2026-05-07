@@ -48,6 +48,7 @@ export default function DiaryDetailPage() {
           <article className="p-5 sm:p-8">
             <p className="text-sm text-tertiary">{formatDateLabel(diary.createdAt)}</p>
             <h2 className="mt-2 font-serif text-4xl font-bold text-primary">{diary.title}</h2>
+            <TagRow eventTag={diary.eventTag} moodTag={diary.moodTag} />
             <p className="mt-4 rounded-2xl border border-white/10 bg-surface-dim/70 p-4 text-on-surface-variant">{diary.summary}</p>
             <div className="prose prose-invert mt-6 max-w-none text-on-surface">
               <p>{diary.content}</p>
@@ -58,7 +59,7 @@ export default function DiaryDetailPage() {
                 {showTranscript ? <EyeOff size={18} /> : <Eye size={18} />}
                 {showTranscript ? "隐藏转文本" : "显示转文本"}
               </GlowButton>
-              <GhostLink href={`/diaries/${diary.id}/edit`}><Edit3 size={16} />编辑总结</GhostLink>
+              <GhostLink href={`/diaries/${diary.id}/edit`}><Edit3 size={16} />编辑日记</GhostLink>
               <button
                 className="inline-flex items-center gap-2 rounded-xl border border-red-300/20 px-4 py-2 text-sm text-red-200 transition hover:bg-red-500/10"
                 onClick={() => setConfirming(true)}
@@ -114,5 +115,19 @@ export default function DiaryDetailPage() {
         </div>
       ) : null}
     </Shell>
+  );
+}
+
+function TagRow({ eventTag, moodTag }: { eventTag?: string; moodTag?: string }) {
+  const tags = [eventTag, moodTag].filter(Boolean);
+  if (tags.length === 0) return null;
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {tags.map((tag) => (
+        <span className="rounded-full border border-tertiary/35 bg-tertiary/10 px-3 py-1 text-sm text-tertiary" key={tag}>
+          {tag}
+        </span>
+      ))}
+    </div>
   );
 }

@@ -124,6 +124,7 @@ export default function CalendarPage() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img alt="日记封面" className="mb-4 h-32 w-full rounded-xl object-cover" src={diary.imageUrl || demoDiary.imageUrl} />
+                <TagRow eventTag={diary.eventTag} moodTag={diary.moodTag} />
                 <h4 className="font-serif text-lg text-on-surface">{diary.title}</h4>
                 <p className="mt-2 line-clamp-3 text-sm text-on-surface-variant">{diary.summary}</p>
               </Link>
@@ -136,5 +137,19 @@ export default function CalendarPage() {
         </aside>
       </Panel>
     </Shell>
+  );
+}
+
+function TagRow({ eventTag, moodTag }: { eventTag?: string; moodTag?: string }) {
+  const tags = [eventTag, moodTag].filter(Boolean);
+  if (tags.length === 0) return null;
+  return (
+    <div className="mb-3 flex flex-wrap gap-2">
+      {tags.map((tag) => (
+        <span className="rounded-full border border-tertiary/35 bg-tertiary/10 px-2.5 py-1 text-xs text-tertiary" key={tag}>
+          {tag}
+        </span>
+      ))}
+    </div>
   );
 }

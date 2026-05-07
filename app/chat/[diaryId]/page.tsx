@@ -27,7 +27,6 @@ export default function ChatPage() {
   const [diaryImage, setDiaryImage] = useState(demoDiary.imageUrl ?? "");
   const [secondsLeft, setSecondsLeft] = useState(maxSeconds);
   const [notice, setNotice] = useState("");
-  const [draftMissing, setDraftMissing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -43,7 +42,6 @@ export default function ChatPage() {
     setDiaryImage(draft?.imageUrl || getCurrentDiaryImage());
     if (!draft && params.diaryId !== "demo-diary") {
       setNotice("未找到上传图片，已载入演示日记。你也可以返回重新上传。");
-      setDraftMissing(true);
     }
   }, [params.diaryId]);
 
@@ -218,7 +216,7 @@ export default function ChatPage() {
                 >
                   {recording ? <Square size={22} /> : <Mic size={22} />}
                 </button>
-                <GlowButton disabled={messages.length < 2 && !draftMissing} type="button" onClick={generateDiary}>
+                <GlowButton type="button" onClick={generateDiary}>
                   结束通话 / 生成日记
                 </GlowButton>
               </div>

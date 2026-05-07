@@ -6,7 +6,7 @@ import { Save, Wand2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { GhostLink, GlowButton, inputClass, Panel, Shell } from "@/components/ui";
 import { demoDiary } from "@/lib/demo-data";
-import { loadSavedDiary, updateDiarySummary } from "@/lib/local-diary";
+import { getTagSettings, loadSavedDiary, updateDiarySummary } from "@/lib/local-diary";
 
 export default function EditDiaryPage() {
   const router = useRouter();
@@ -14,13 +14,22 @@ export default function EditDiaryPage() {
   const [title, setTitle] = useState(demoDiary.title);
   const [summary, setSummary] = useState(demoDiary.summary);
   const [content, setContent] = useState(demoDiary.content);
+  const [eventTags, setEventTags] = useState<string[]>([]);
+  const [moodTags, setMoodTags] = useState<string[]>([]);
+  const [eventTag, setEventTag] = useState("");
+  const [moodTag, setMoodTag] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     const diary = loadSavedDiary(params.diaryId);
+    const settings = getTagSettings();
     setTitle(diary.title);
     setSummary(diary.summary);
     setContent(diary.content);
+    setEventTags(settings.eventTags);
+    setMoodTags(settings.moodTags);
+    setEventTag(diary.eventTag || settings.eventTags[0] || "");
+    setMoodTag(diary.moodTag || settings.moodTags[0] || "");
   }, [params.diaryId]);
 
   function submit(event: FormEvent) {
@@ -32,7 +41,9 @@ export default function EditDiaryPage() {
     updateDiarySummary(params.diaryId, {
       title: title.trim(),
       summary: summary.trim(),
-      content: content.trim()
+      content: content.trim(),
+      eventTag,
+      moodTag
     });
     router.push(`/diaries/${params.diaryId}`);
   }
@@ -56,15 +67,19 @@ export default function EditDiaryPage() {
 
   return (
     <Shell>
-      <AppHeader title="编辑总结" />
+      <AppHeader title="编辑日记" />
       <Panel className="p-6 sm:p-8">
         <form className="space-y-5" onSubmit={submit}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-secondary">AI 生成内容可编辑</p>
+              <p className="text-sm text-secondary">标题、标签和 AI 生成内容可编辑</p>
               <h2 className="font-serif text-3xl text-primary">整理这篇日记</h2>
             </div>
             <GhostLink href={`/diaries/${params.diaryId}`}>取消</GhostLink>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TagPicker label="事件" onSelect={setEventTag} selected={eventTag} tags={eventTags} />
+            <TagPicker label="心情" onSelect={setMoodTag} selected={moodTag} tags={moodTags} />
           </div>
           <label className="block space-y-2">
             <span className="text-sm text-on-surface-variant">标题</span>
@@ -93,5 +108,39 @@ export default function EditDiaryPage() {
         </form>
       </Panel>
     </Shell>
+  );
+}
+
+function TagPicker({
+  label,
+  onSelect,
+  selected,
+  tags
+}: {
+  label: string;
+  onSelect: (tag: string) => void;
+  selected: string;
+  tags: string[];
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-on-surface-variant">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <button
+            className={`rounded-full border px-3 py-1.5 text-sm transition ${
+              selected === tag
+                ? "border-tertiary/55 bg-tertiary/15 text-tertiary shadow-amber"
+                : "border-white/10 bg-surface-dim/50 text-on-surface-variant hover:border-secondary/40 hover:text-secondary"
+            }`}
+            key={tag}
+            onClick={() => onSelect(tag)}
+            type="button"
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

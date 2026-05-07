@@ -1,11 +1,11 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Mail, Ticket } from "lucide-react";
 import { Field, GlowButton, inputClass, Panel, Shell } from "@/components/ui";
-import { saveLocalUser } from "@/lib/local-diary";
+import { getLocalUser, saveLocalUser } from "@/lib/local-diary";
 import { qqEmailIsValid } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -16,6 +16,10 @@ export default function LoginPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [expectedCode, setExpectedCode] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (getLocalUser()) router.replace("/home");
+  }, [router]);
 
   function requestCode() {
     if (!qqEmailIsValid(email)) {

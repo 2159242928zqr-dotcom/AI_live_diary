@@ -1,18 +1,55 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ImagePlus, RefreshCcw, Sparkles } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
-import { GhostLink, GlowButton, Panel, Shell } from "@/components/ui";
-import { createDraft } from "@/lib/local-diary";
+import { GhostLink, GlowButton, inputClass, Panel, Shell } from "@/components/ui";
+import { createDraft, getTagSettings } from "@/lib/local-diary";
 
 const maxBytes = 10 * 1024 * 1024;
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+const maxImageSide = 1400;
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("image failed"));
+    image.src = src;
+  });
+}
+
+async function compressImage(file: File) {
+  const dataUrl = await readFileAsDataUrl(file);
+  const image = await loadImage(dataUrl);
+  const scale = Math.min(1, maxImageSide / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d")?.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
 
 export default function UploadPage() {
   const router = useRouter();
   const [preview, setPreview] = useState<string>("");
+  const [title, setTitle] = useState("");
+  const [eventTags, setEventTags] = useState<string[]>([]);
+  const [moodTags, setMoodTags] = useState<string[]>([]);
+  const [eventTag, setEventTag] = useState("");
+  const [moodTag, setMoodTag] = useState("");
   const [error, setError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -20,12 +57,20 @@ export default function UploadPage() {
 
   const canStart = useMemo(() => Boolean(preview && !error), [preview, error]);
 
+  useEffect(() => {
+    const settings = getTagSettings();
+    setEventTags(settings.eventTags);
+    setMoodTags(settings.moodTags);
+    setEventTag(settings.eventTags[0] ?? "");
+    setMoodTag(settings.moodTags[0] ?? "");
+  }, []);
+
   function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     handleFile(file);
   }
 
-  function handleFile(file?: File) {
+  async function handleFile(file?: File) {
     setError("");
     if (!file) return;
     if (!allowedTypes.includes(file.type)) {
@@ -36,10 +81,11 @@ export default function UploadPage() {
       setError("图片不能超过 10MB。");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setPreview(typeof reader.result === "string" ? reader.result : "");
-    reader.onerror = () => setError("图片读取失败，请重新选择。");
-    reader.readAsDataURL(file);
+    try {
+      setPreview(await compressImage(file));
+    } catch {
+      setError("图片读取失败，请重新选择。");
+    }
   }
 
   function onDrop(event: DragEvent<HTMLLabelElement>) {
@@ -51,7 +97,7 @@ export default function UploadPage() {
   function start() {
     if (!canStart) return;
     setIsStarting(true);
-    const draft = createDraft(preview);
+    const draft = createDraft(preview, { title, eventTag, moodTag });
     window.setTimeout(() => router.push(`/chat/${draft.id}`), 420);
   }
 
@@ -66,13 +112,27 @@ export default function UploadPage() {
     <Shell>
       <AppHeader title="上传图片" />
       <Panel className="grid gap-6 p-6 md:grid-cols-[0.9fr_1.1fr] md:p-8">
-        <div className="flex flex-col justify-between gap-8">
+        <div className="flex flex-col gap-5">
+          <GhostLink className="w-fit" href="/home"><ArrowLeft size={16} />返回</GhostLink>
           <div>
-            <GhostLink href="/home"><ArrowLeft size={16} />返回</GhostLink>
-            <h2 className="mt-6 font-serif text-3xl font-semibold text-primary">从一张照片开始今天的记录</h2>
-            <p className="mt-3 text-on-surface-variant">第一版每篇日记只支持一张图片。上传成功后，AI 才会开启语音日记。</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.05em] text-secondary">创建日记</p>
+            <h2 className="mt-2 whitespace-nowrap font-serif text-2xl font-semibold text-primary">从照片开始今天的记录</h2>
+            <p className="mt-2 whitespace-nowrap text-xs text-on-surface-variant/70">单篇一张图片 · JPG / PNG / WebP · 最大 10MB</p>
           </div>
-          <p className="text-xs text-on-surface-variant/55">支持 JPG、PNG、WebP，最大 10MB。</p>
+
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.05em] text-on-surface-variant">标题</span>
+            <input
+              className={inputClass}
+              maxLength={28}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="例如：海边的下午"
+              value={title}
+            />
+          </label>
+
+          <TagPicker label="事件" onSelect={setEventTag} selected={eventTag} tags={eventTags} />
+          <TagPicker label="心情" onSelect={setMoodTag} selected={moodTag} tags={moodTags} />
         </div>
 
         <div className="space-y-4">
@@ -127,5 +187,39 @@ export default function UploadPage() {
         </div>
       </Panel>
     </Shell>
+  );
+}
+
+function TagPicker({
+  label,
+  onSelect,
+  selected,
+  tags
+}: {
+  label: string;
+  onSelect: (tag: string) => void;
+  selected: string;
+  tags: string[];
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-[0.05em] text-on-surface-variant">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <button
+            className={`rounded-full border px-3 py-1.5 text-sm transition ${
+              selected === tag
+                ? "border-tertiary/55 bg-tertiary/15 text-tertiary shadow-amber"
+                : "border-white/10 bg-surface-dim/50 text-on-surface-variant hover:border-secondary/40 hover:text-secondary"
+            }`}
+            key={tag}
+            onClick={() => onSelect(tag)}
+            type="button"
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

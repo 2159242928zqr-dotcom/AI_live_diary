@@ -18,6 +18,8 @@ export type DiarySummary = {
   date: string;
   createdAt: string;
   imageUrl?: string;
+  eventTag?: string;
+  moodTag?: string;
   status: DiaryStatus;
   messages: DiaryMessage[];
 };

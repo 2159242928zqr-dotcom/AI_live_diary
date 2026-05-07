@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Memory Vessel - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Noto+Serif:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-high": "#23293c",
+                        "inverse-surface": "#dce1fb",
+                        "surface-tint": "#bec6e0",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#402d00",
+                        "on-secondary": "#381385",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "tertiary-fixed": "#ffdf9f",
+                        "tertiary": "#f9bd22",
+                        "primary-container": "#0f172a",
+                        "surface-bright": "#33394c",
+                        "on-primary-container": "#798098",
+                        "on-secondary-container": "#bea8ff",
+                        "on-error": "#690005",
+                        "on-background": "#dce1fb",
+                        "secondary": "#cebdff",
+                        "on-tertiary-fixed": "#261a00",
+                        "inverse-primary": "#565e74",
+                        "secondary-fixed": "#e8ddff",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#f9bd22",
+                        "on-surface": "#dce1fb",
+                        "surface-container-low": "#151b2d",
+                        "outline": "#909097",
+                        "surface-container-lowest": "#070d1f",
+                        "on-primary-fixed": "#131b2e",
+                        "primary": "#bec6e0",
+                        "on-tertiary-fixed-variant": "#5c4300",
+                        "surface-variant": "#2e3447",
+                        "secondary-fixed-dim": "#cebdff",
+                        "inverse-on-surface": "#2a3043",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-primary": "#283044",
+                        "surface-dim": "#0c1324",
+                        "error-container": "#93000a",
+                        "background": "#0c1324",
+                        "surface": "#0c1324",
+                        "surface-container": "#191f31",
+                        "secondary-container": "#4f319c",
+                        "outline-variant": "#45464d",
+                        "surface-container-highest": "#2e3447",
+                        "on-tertiary-container": "#a47a00",
+                        "primary-fixed": "#dae2fd",
+                        "tertiary-container": "#211600",
+                        "on-secondary-fixed": "#21005e",
+                        "on-surface-variant": "#c6c6cd",
+                        "primary-fixed-dim": "#bec6e0"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        "margin-mobile": "1rem",
+                        "gutter-md": "1.5rem",
+                        "container-max-width": "860px",
+                        "stack-gap": "2rem"
+                    },
+                    fontFamily: {
+                        "body-sm": ["inter"],
+                        "display-lg": ["notoSerif"],
+                        "label-caps": ["inter"],
+                        "body-main": ["inter"],
+                        "header-title": ["notoSerif"]
+                    },
+                    fontSize: {
+                        "body-sm": ["14px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "display-lg": ["40px", { lineHeight: "1.2", fontWeight: "700" }],
+                        "label-caps": ["12px", { lineHeight: "1.2", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "body-main": ["16px", { lineHeight: "1.6", fontWeight: "400" }],
+                        "header-title": ["24px", { lineHeight: "1.4", fontWeight: "600" }]
+                    }
+                }
+            }
+        };
+    </script>
+<style>
+        .inner-glow {
+            box-shadow: inset 0 0 20px rgba(206, 189, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+        .soft-violet-glow {
+            box-shadow: 0 0 30px rgba(206, 189, 255, 0.3);
+        }
+        .diary-shadow {
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col items-center justify-center relative overflow-hidden font-body-main antialiased">
+<!-- Ambient Lighting Background -->
+<div class="fixed inset-0 pointer-events-none z-0 flex items-center justify-center">
+<div class="w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] bg-secondary/10 rounded-full blur-[100px]"></div>
+</div>
+<!-- Top App Bar (Web / Shared) -->
+<header class="fixed top-0 w-full z-40 bg-transparent bg-gradient-to-b from-surface-dim to-transparent flex justify-between items-center px-margin-mobile h-16 max-w-container-max-width mx-auto">
+<div class="font-header-title text-header-title text-primary tracking-wide">
+            Memory Vessel
+        </div>
+<div class="flex gap-4 items-center">
+<button class="text-on-surface-variant hover:text-tertiary transition-colors duration-300">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">calendar_month</span>
+</button>
+<button class="text-on-surface-variant hover:text-tertiary transition-colors duration-300">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="relative z-10 w-full max-w-container-max-width px-margin-mobile flex flex-col items-center justify-center pb-24 pt-20 flex-grow">
+<!-- Greeting -->
+<h1 class="font-display-lg text-display-lg text-on-surface mb-stack-gap text-center drop-shadow-md">
+            准备好开启今天的记忆了吗？
+        </h1>
+<!-- 3D Journal Centerpiece -->
+<div class="relative w-64 h-80 md:w-80 md:h-96 bg-gradient-to-br from-surface-container-highest to-surface-container-low rounded-lg diary-shadow mb-stack-gap group transition-transform duration-500 hover:scale-105 flex items-center justify-center">
+<!-- Spine Decoration -->
+<div class="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-surface-dim to-transparent rounded-l-lg opacity-50"></div>
+<!-- Cover Decoration / Emboss -->
+<div class="w-2/3 h-3/4 border border-outline-variant/30 rounded flex items-center justify-center inner-glow bg-surface-container/50">
+<span class="material-symbols-outlined text-4xl text-primary/50 group-hover:text-secondary transition-colors duration-500">auto_awesome</span>
+</div>
+</div>
+<!-- Start Record Button -->
+<button class="bg-secondary text-on-secondary font-header-title text-header-title px-8 py-4 rounded-full soft-violet-glow hover:bg-secondary-fixed transition-all duration-300 hover:scale-105 flex items-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mic</span>
+            开启新记录
+        </button>
+<!-- Navigation Links (Desktop secondary nav, Mobile hidden due to BottomNavBar) -->
+<div class="mt-stack-gap hidden md:flex gap-8 text-on-surface-variant font-label-caps text-label-caps uppercase tracking-wider">
+<a class="hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-sm">calendar_month</span> Calendar
+            </a>
+<a class="hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-sm">auto_stories</span> Archive
+            </a>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface-container/80 backdrop-blur-xl rounded-t-xl border-t border-white/5 shadow-[0_-8px_30px_rgb(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-tertiary drop-shadow-[0_0_8px_rgba(249,189,34,0.4)] scale-110 duration-200 ease-out font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+            Home
+        </a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-300 font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">auto_stories</span>
+            Archive
+        </a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-300 font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">analytics</span>
+            Insights
+        </a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-300 font-label-caps text-label-caps" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">person</span>
+            Profile
+        </a>
+</nav>
+</body></html>

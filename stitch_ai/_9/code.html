@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Memory Vessel - Delete Confirmation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#23293c",
+                        "inverse-surface": "#dce1fb",
+                        "surface-tint": "#bec6e0",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#402d00",
+                        "on-secondary": "#381385",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "tertiary-fixed": "#ffdf9f",
+                        "tertiary": "#f9bd22",
+                        "primary-container": "#0f172a",
+                        "surface-bright": "#33394c",
+                        "on-primary-container": "#798098",
+                        "on-secondary-container": "#bea8ff",
+                        "on-error": "#690005",
+                        "on-background": "#dce1fb",
+                        "secondary": "#cebdff",
+                        "on-tertiary-fixed": "#261a00",
+                        "inverse-primary": "#565e74",
+                        "secondary-fixed": "#e8ddff",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#f9bd22",
+                        "on-surface": "#dce1fb",
+                        "surface-container-low": "#151b2d",
+                        "outline": "#909097",
+                        "surface-container-lowest": "#070d1f",
+                        "on-primary-fixed": "#131b2e",
+                        "primary": "#bec6e0",
+                        "on-tertiary-fixed-variant": "#5c4300",
+                        "surface-variant": "#2e3447",
+                        "secondary-fixed-dim": "#cebdff",
+                        "inverse-on-surface": "#2a3043",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-primary": "#283044",
+                        "surface-dim": "#0c1324",
+                        "error-container": "#93000a",
+                        "background": "#0c1324",
+                        "surface": "#0c1324",
+                        "surface-container": "#191f31",
+                        "secondary-container": "#4f319c",
+                        "outline-variant": "#45464d",
+                        "surface-container-highest": "#2e3447",
+                        "on-tertiary-container": "#a47a00",
+                        "primary-fixed": "#dae2fd",
+                        "tertiary-container": "#211600",
+                        "on-secondary-fixed": "#21005e",
+                        "on-surface-variant": "#c6c6cd",
+                        "primary-fixed-dim": "#bec6e0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "1rem",
+                        "gutter-md": "1.5rem",
+                        "container-max-width": "860px",
+                        "stack-gap": "2rem"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["inter"],
+                        "display-lg": ["notoSerif"],
+                        "label-caps": ["inter"],
+                        "body-main": ["inter"],
+                        "header-title": ["notoSerif"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["40px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "header-title": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen relative flex flex-col justify-center items-center overflow-hidden">
+<!-- Ambient Background / Canvas context -->
+<div class="absolute inset-0 z-0 opacity-20 pointer-events-none">
+<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-secondary-container rounded-full mix-blend-screen filter blur-[100px]"></div>
+<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-surface-container-high rounded-full mix-blend-screen filter blur-[120px]"></div>
+</div>
+<!-- Backdrop -->
+<div class="fixed inset-0 z-40 bg-surface-dim/80 backdrop-blur-md transition-opacity"></div>
+<!-- Modal Container -->
+<div class="relative z-50 w-full max-w-[400px] px-margin-mobile">
+<!-- 3D Memory Card Style Modal -->
+<div class="bg-gradient-to-b from-surface-container to-surface-container-low rounded-xl border border-white/5 shadow-[0_16px_40px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col">
+<!-- Inner Glow / Highlight -->
+<div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+<!-- Content Area -->
+<div class="p-8 flex flex-col items-center text-center">
+<!-- Warning Icon with Glow -->
+<div class="mb-6 relative">
+<div class="absolute inset-0 bg-error/20 blur-xl rounded-full"></div>
+<div class="w-16 h-16 rounded-full bg-surface-container-highest border border-white/5 flex items-center justify-center relative z-10 shadow-inner">
+<span class="material-symbols-outlined text-error text-[32px]" style="font-variation-settings: 'FILL' 1;">
+                            warning
+                        </span>
+</div>
+</div>
+<!-- Text Content -->
+<h2 class="font-header-title text-header-title text-on-surface mb-2">确定要删除这段记忆吗？</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">删除后将无法找回</p>
+</div>
+<!-- Action Area -->
+<div class="p-6 pt-0 flex gap-4 w-full">
+<!-- Cancel Button (Ghost) -->
+<button class="flex-1 py-3 px-4 rounded-lg font-label-caps text-label-caps text-on-surface-variant border border-outline-variant hover:bg-surface-variant transition-colors flex items-center justify-center shadow-inner">
+                    取消
+                </button>
+<!-- Confirm Delete Button (Subtle Warning) -->
+<button class="flex-1 py-3 px-4 rounded-lg font-label-caps text-label-caps text-error bg-surface-container-highest border border-error/20 hover:bg-error-container hover:text-on-error-container transition-colors flex items-center justify-center shadow-inner relative group overflow-hidden">
+<div class="absolute inset-0 bg-error/10 blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<span class="relative z-10">确认删除</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

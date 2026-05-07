@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Memory Vessel - Voice Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Noto+Serif:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#23293c",
+                        "inverse-surface": "#dce1fb",
+                        "surface-tint": "#bec6e0",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#402d00",
+                        "on-secondary": "#381385",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "tertiary-fixed": "#ffdf9f",
+                        "tertiary": "#f9bd22",
+                        "primary-container": "#0f172a",
+                        "surface-bright": "#33394c",
+                        "on-primary-container": "#798098",
+                        "on-secondary-container": "#bea8ff",
+                        "on-error": "#690005",
+                        "on-background": "#dce1fb",
+                        "secondary": "#cebdff",
+                        "on-tertiary-fixed": "#261a00",
+                        "inverse-primary": "#565e74",
+                        "secondary-fixed": "#e8ddff",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#f9bd22",
+                        "on-surface": "#dce1fb",
+                        "surface-container-low": "#151b2d",
+                        "outline": "#909097",
+                        "surface-container-lowest": "#070d1f",
+                        "on-primary-fixed": "#131b2e",
+                        "primary": "#bec6e0",
+                        "on-tertiary-fixed-variant": "#5c4300",
+                        "surface-variant": "#2e3447",
+                        "secondary-fixed-dim": "#cebdff",
+                        "inverse-on-surface": "#2a3043",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-primary": "#283044",
+                        "surface-dim": "#0c1324",
+                        "error-container": "#93000a",
+                        "background": "#0c1324",
+                        "surface": "#0c1324",
+                        "surface-container": "#191f31",
+                        "secondary-container": "#4f319c",
+                        "outline-variant": "#45464d",
+                        "surface-container-highest": "#2e3447",
+                        "on-tertiary-container": "#a47a00",
+                        "primary-fixed": "#dae2fd",
+                        "tertiary-container": "#211600",
+                        "on-secondary-fixed": "#21005e",
+                        "on-surface-variant": "#c6c6cd",
+                        "primary-fixed-dim": "#bec6e0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "1rem",
+                        "gutter-md": "1.5rem",
+                        "container-max-width": "860px",
+                        "stack-gap": "2rem"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Noto Serif"],
+                        "label-caps": ["Inter"],
+                        "body-main": ["Inter"],
+                        "header-title": ["Noto Serif"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["40px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "header-title": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .inner-border { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05); }
+        .memory-glow { box-shadow: 0 0 20px rgba(206, 189, 255, 0.15); }
+        .mic-glow { box-shadow: 0 0 30px rgba(206, 189, 255, 0.3); }
+        .glass-panel { background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9)); backdrop-filter: blur(12px); }
+        .waveform-gradient { background: linear-gradient(90deg, rgba(206, 189, 255, 0.2), rgba(206, 189, 255, 0.8), rgba(206, 189, 255, 0.2)); }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col font-body-main antialiased selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Top App Bar (Suppressed for focused task per semantic shell mandate, keeping only a close/back indicator if needed, but since it's a journal spread, we'll keep it clean. Wait, JSON provided TopAppBar, but instructions say "Task-Focused: Any sub-page featuring a 'Close' or 'Back' action... suppress the navigation". We will suppress the global navs to focus on the journal canvas.) -->
+<header class="flex justify-between items-center px-margin-mobile h-16 w-full max-w-container-max-width mx-auto bg-transparent absolute top-0 left-0 right-0 z-50 pointer-events-none">
+<button class="pointer-events-auto text-primary hover:text-tertiary transition-colors duration-300 flex items-center justify-center w-10 h-10 rounded-full bg-surface-container/50 backdrop-blur-md inner-border">
+<span class="material-symbols-outlined">close</span>
+</button>
+<div class="font-header-title text-header-title text-primary tracking-wide text-center">Memory Vessel</div>
+<div class="w-10"></div> <!-- Spacer for balance -->
+</header>
+<!-- Main Content Canvas (Two-page spread) -->
+<main class="flex-grow flex items-center justify-center p-4 md:p-8 pt-20">
+<div class="w-full max-w-[1000px] flex flex-col md:flex-row gap-4 md:gap-8 h-[819px] min-h-[600px]">
+<!-- Left Page: Uploaded Image -->
+<div class="flex-1 glass-panel rounded-xl inner-border overflow-hidden relative shadow-[0_20px_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-dim to-transparent z-10 opacity-60"></div>
+<img alt="A beautifully worn vintage camera resting on a rustic wooden table, softly illuminated by warm, golden-hour sunlight filtering through a nearby window. The scene evokes a deep sense of nostalgia and quiet contemplation, fitting the private, ceremonial mood of the Memory Vessel app. The lighting is moody with deep shadows, contrasting with the soft, ethereal light highlighting the camera's lens. The color palette features deep ambers and subtle violets, complementing the overall dark mode aesthetic." class="w-full h-full object-cover mix-blend-luminosity opacity-80" data-alt="A beautifully worn vintage camera resting on a rustic wooden table, softly illuminated by warm, golden-hour sunlight filtering through a nearby window. The scene evokes a deep sense of nostalgia and quiet contemplation, fitting the private, ceremonial mood of the Memory Vessel app. The lighting is moody with deep shadows, contrasting with the soft, ethereal light highlighting the camera's lens. The color palette features deep ambers and subtle violets, complementing the overall dark mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDX0t1kmtSw6WBdEBYEwBs8_ZvRvmbzRlQxtQW-GXeLcFDmIVOtm5Vx4H0Dr-8uGk7Ku_y_yhxcDP3RctV1jHfB8EyYLeHv1OYKFkkJyXFO_MuUzkLd425_QPpafwqfhEKvaR7W1PU10eLzkdAQ3CoNRY5RHc6LM2kK8dPjeBTAuYbSlY9Q6t2GwEdq6Y8qMfqKaDC_EQ6fSfQTHLWIlAD3QiMWJXhhAplhG-ZuxmTF7vlmFA53oXFsS7DDIz90uXGb2C9_Qrd5aAfY"/>
+<div class="absolute bottom-6 left-6 z-20 flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">image</span>
+<span class="font-label-caps text-label-caps">回忆影像</span>
+</div>
+</div>
+<!-- Right Page: AI Chat Interface -->
+<div class="flex-1 glass-panel rounded-xl inner-border flex flex-col relative shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+<!-- Header / Waveform -->
+<div class="p-6 border-b border-white/5 flex flex-col items-center gap-4 shrink-0">
+<div class="font-header-title text-header-title text-secondary tracking-wider text-center">聆听者</div>
+<!-- 3D Waveform representation -->
+<div class="w-full h-8 flex items-center justify-center gap-1">
+<div class="w-1 h-3 rounded-full waveform-gradient opacity-50"></div>
+<div class="w-1.5 h-5 rounded-full waveform-gradient opacity-70"></div>
+<div class="w-1.5 h-8 rounded-full waveform-gradient shadow-[0_0_10px_rgba(206,189,255,0.6)]"></div>
+<div class="w-1.5 h-4 rounded-full waveform-gradient opacity-60"></div>
+<div class="w-1 h-2 rounded-full waveform-gradient opacity-40"></div>
+</div>
+</div>
+<!-- Chat History (Scrollable) -->
+<div class="flex-grow overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar">
+<!-- AI Bubble -->
+<div class="flex gap-3 max-w-[85%] self-start">
+<div class="w-8 h-8 rounded-full bg-surface-container-high inner-border flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-sm">auto_awesome</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-2xl rounded-tl-sm inner-border text-on-surface font-body-sm text-body-sm leading-relaxed">
+                            这张照片看起来很有故事。那个老相机，是你最近找到的，还是陪伴了你很久？
+                        </div>
+</div>
+<!-- User Bubble (Speech to text) -->
+<div class="flex gap-3 max-w-[85%] self-end flex-row-reverse">
+<div class="bg-surface-variant p-4 rounded-2xl rounded-tr-sm inner-border text-on-surface font-body-sm text-body-sm leading-relaxed shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]">
+                            是我爷爷留给我的。今天整理旧物的时候翻出来的，突然感觉时间过得好快。
+                        </div>
+</div>
+<!-- AI Bubble -->
+<div class="flex gap-3 max-w-[85%] self-start">
+<div class="w-8 h-8 rounded-full bg-surface-container-high inner-border flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-sm">auto_awesome</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-2xl rounded-tl-sm inner-border text-on-surface font-body-sm text-body-sm leading-relaxed">
+                            爷爷的相机一定记录过很多珍贵的瞬间。看到它，你最先想起的是关于他的什么画面呢？可以慢慢告诉我，我在这里听着。
+                        </div>
+</div>
+</div>
+<!-- Input Area (Bottom) -->
+<div class="p-6 pt-2 pb-8 flex flex-col items-center gap-6 shrink-0 relative z-10">
+<!-- Action Buttons -->
+<div class="w-full flex justify-between items-end px-4">
+<button class="w-10 h-10 rounded-full bg-surface-container inner-border flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg">keyboard</span>
+</button>
+<!-- Giant Mic Button -->
+<button class="w-20 h-20 rounded-full bg-secondary text-on-secondary flex items-center justify-center mic-glow relative group transition-transform hover:scale-105 active:scale-95">
+<div class="absolute inset-0 rounded-full bg-secondary opacity-50 blur-md group-hover:blur-lg transition-all"></div>
+<span class="material-symbols-outlined text-3xl relative z-10" style="font-variation-settings: 'FILL' 1;">mic</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container inner-border flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg">more_horiz</span>
+</button>
+</div>
+<!-- Generate Button -->
+<button class="px-8 py-3 rounded-full bg-primary-container border border-surface-tint text-primary font-body-sm text-body-sm tracking-wide hover:bg-surface-container transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
+                        生成日记
+                    </button>
+</div>
+<!-- Bottom Fade -->
+<div class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-surface to-transparent pointer-events-none rounded-b-xl"></div>
+</div>
+</div>
+</main>
+</body></html>

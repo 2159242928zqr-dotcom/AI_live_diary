@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>上传图片 - Memory Vessel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Noto+Serif:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#23293c",
+                        "inverse-surface": "#dce1fb",
+                        "surface-tint": "#bec6e0",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#402d00",
+                        "on-secondary": "#381385",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "tertiary-fixed": "#ffdf9f",
+                        "tertiary": "#f9bd22",
+                        "primary-container": "#0f172a",
+                        "surface-bright": "#33394c",
+                        "on-primary-container": "#798098",
+                        "on-secondary-container": "#bea8ff",
+                        "on-error": "#690005",
+                        "on-background": "#dce1fb",
+                        "secondary": "#cebdff",
+                        "on-tertiary-fixed": "#261a00",
+                        "inverse-primary": "#565e74",
+                        "secondary-fixed": "#e8ddff",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#f9bd22",
+                        "on-surface": "#dce1fb",
+                        "surface-container-low": "#151b2d",
+                        "outline": "#909097",
+                        "surface-container-lowest": "#070d1f",
+                        "on-primary-fixed": "#131b2e",
+                        "primary": "#bec6e0",
+                        "on-tertiary-fixed-variant": "#5c4300",
+                        "surface-variant": "#2e3447",
+                        "secondary-fixed-dim": "#cebdff",
+                        "inverse-on-surface": "#2a3043",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-primary": "#283044",
+                        "surface-dim": "#0c1324",
+                        "error-container": "#93000a",
+                        "background": "#0c1324",
+                        "surface": "#0c1324",
+                        "surface-container": "#191f31",
+                        "secondary-container": "#4f319c",
+                        "outline-variant": "#45464d",
+                        "surface-container-highest": "#2e3447",
+                        "on-tertiary-container": "#a47a00",
+                        "primary-fixed": "#dae2fd",
+                        "tertiary-container": "#211600",
+                        "on-secondary-fixed": "#21005e",
+                        "on-surface-variant": "#c6c6cd",
+                        "primary-fixed-dim": "#bec6e0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "1rem",
+                        "gutter-md": "1.5rem",
+                        "container-max-width": "860px",
+                        "stack-gap": "2rem"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Noto Serif"],
+                        "label-caps": ["Inter"],
+                        "body-main": ["Inter"],
+                        "header-title": ["Noto Serif"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["40px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "header-title": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .inner-glow {
+            box-shadow: inset 0 0 20px rgba(206, 189, 255, 0.1);
+        }
+        .soft-violet-glow {
+            box-shadow: 0 0 30px rgba(79, 49, 156, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-main text-body-main relative overflow-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-transparent bg-gradient-to-b from-surface-dim to-transparent flat no shadows flex justify-between items-center px-margin-mobile h-16 w-full max-w-container-max-width mx-auto">
+<div class="flex items-center gap-4">
+<!-- Back Button -->
+<button class="text-on-surface-variant hover:text-tertiary transition-colors duration-300 w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container/50">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-header-title text-header-title text-primary tracking-wide">Memory Vessel</h1>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-tertiary transition-colors duration-300 w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container/50">
+<span class="material-symbols-outlined">calendar_month</span>
+</button>
+<button class="hover:text-tertiary transition-colors duration-300 w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container/50">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow flex flex-col items-center justify-center px-margin-mobile pt-24 pb-32 max-w-container-max-width mx-auto w-full relative z-10">
+<!-- Ambient Background Element -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-secondary-container/20 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="text-center mb-stack-gap max-w-md w-full">
+<h2 class="font-display-lg text-display-lg text-primary mb-4">开启今日记忆</h2>
+<p class="font-body-main text-body-main text-on-surface-variant">上传一张图片作为今日记忆的引子</p>
+</div>
+<!-- 3D Memory Card / Upload Zone -->
+<div class="w-full max-w-md aspect-[4/5] bg-gradient-to-b from-surface-container to-primary-container rounded-2xl border border-white/5 shadow-[0_20px_40px_rgb(0,0,0,0.4)] inner-glow relative group overflow-hidden flex flex-col items-center justify-center cursor-pointer transition-transform duration-500 hover:scale-[1.02]">
+<!-- Upload Prompt State -->
+<div class="absolute inset-0 flex flex-col items-center justify-center opacity-100 group-hover:opacity-80 transition-opacity z-10">
+<div class="w-20 h-20 rounded-full bg-surface-container-high/50 flex items-center justify-center mb-6 border border-white/10 soft-violet-glow group-hover:shadow-[0_0_40px_rgba(206,189,255,0.3)] transition-shadow">
+<span class="material-symbols-outlined text-4xl text-secondary">add_photo_alternate</span>
+</div>
+<span class="font-label-caps text-label-caps text-secondary-fixed-dim">点击或拖拽图片至此处</span>
+</div>
+<!-- Decorative Elements simulating a partially open journal -->
+<div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-surface-dim/80 to-transparent border-r border-white/5 z-20"></div>
+<div class="absolute -left-4 top-4 bottom-4 w-1 bg-secondary-container/30 rounded-full blur-[2px] z-20"></div>
+<!-- Simulated Thumbnail (Hidden by default, shown for demonstration of 'uploaded' state) -->
+<!-- 
+            <img src="https://images.unsplash.com/photo-1518552796123-28f090ceb6ec?auto=format&fit=crop&q=80&w=800" 
+                 alt="A moody, cinematic photograph of a rainy window at night. Soft blurred city lights in hues of amber and deep violet reflect on the wet glass. The scene evokes a feeling of quiet introspection and solitude, typical of a late-night memory. The overall lighting is dark and moody."
+                 data-alt="A moody, cinematic photograph of a rainy window at night. Soft blurred city lights in hues of amber and deep violet reflect on the wet glass. The scene evokes a feeling of quiet introspection and solitude, typical of a late-night memory. The overall lighting is dark and moody."
+                 class="absolute inset-0 w-full h-full object-cover opacity-60 z-0">
+            <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-0"></div>
+            -->
+</div>
+<!-- Action Area -->
+<div class="mt-stack-gap w-full max-w-md flex flex-col gap-4">
+<button class="w-full py-4 px-6 bg-secondary-container text-on-secondary-container rounded-xl font-label-caps text-label-caps soft-violet-glow hover:bg-secondary hover:text-on-secondary transition-all duration-300 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">mic</span>
+                开始语音日记
+            </button>
+<button class="w-full py-4 px-6 bg-transparent border border-outline-variant text-on-surface-variant rounded-xl font-label-caps text-label-caps hover:border-outline hover:text-on-surface transition-colors duration-300">
+                跳过，直接记录
+            </button>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Memory Vessel - Daily Entries</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Noto+Serif:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#23293c",
+                    "inverse-surface": "#dce1fb",
+                    "surface-tint": "#bec6e0",
+                    "error": "#ffb4ab",
+                    "on-tertiary": "#402d00",
+                    "on-secondary": "#381385",
+                    "on-secondary-fixed-variant": "#4f319c",
+                    "tertiary-fixed": "#ffdf9f",
+                    "tertiary": "#f9bd22",
+                    "primary-container": "#0f172a",
+                    "surface-bright": "#33394c",
+                    "on-primary-container": "#798098",
+                    "on-secondary-container": "#bea8ff",
+                    "on-error": "#690005",
+                    "on-background": "#dce1fb",
+                    "secondary": "#cebdff",
+                    "on-tertiary-fixed": "#261a00",
+                    "inverse-primary": "#565e74",
+                    "secondary-fixed": "#e8ddff",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#f9bd22",
+                    "on-surface": "#dce1fb",
+                    "surface-container-low": "#151b2d",
+                    "outline": "#909097",
+                    "surface-container-lowest": "#070d1f",
+                    "on-primary-fixed": "#131b2e",
+                    "primary": "#bec6e0",
+                    "on-tertiary-fixed-variant": "#5c4300",
+                    "surface-variant": "#2e3447",
+                    "secondary-fixed-dim": "#cebdff",
+                    "inverse-on-surface": "#2a3043",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "on-primary": "#283044",
+                    "surface-dim": "#0c1324",
+                    "error-container": "#93000a",
+                    "background": "#0c1324",
+                    "surface": "#0c1324",
+                    "surface-container": "#191f31",
+                    "secondary-container": "#4f319c",
+                    "outline-variant": "#45464d",
+                    "surface-container-highest": "#2e3447",
+                    "on-tertiary-container": "#a47a00",
+                    "primary-fixed": "#dae2fd",
+                    "tertiary-container": "#211600",
+                    "on-secondary-fixed": "#21005e",
+                    "on-surface-variant": "#c6c6cd",
+                    "primary-fixed-dim": "#bec6e0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "1rem",
+                    "gutter-md": "1.5rem",
+                    "container-max-width": "860px",
+                    "stack-gap": "2rem"
+            },
+            "fontFamily": {
+                    "body-sm": ["inter"],
+                    "display-lg": ["notoSerif"],
+                    "label-caps": ["inter"],
+                    "body-main": ["inter"],
+                    "header-title": ["notoSerif"]
+            },
+            "fontSize": {
+                    "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                    "display-lg": ["40px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                    "label-caps": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                    "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                    "header-title": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Custom styles for 3D scrollbar and extra glass utilities if needed */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2e3447;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-main antialiased min-h-screen selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Ambient Background Glow -->
+<div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+<div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-secondary-container/10 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-surface-container-high/30 rounded-full blur-[150px]"></div>
+</div>
+<!-- Main Content Container -->
+<!-- Suppressing global BottomNav as this is a specific sub-task/detail view -->
+<main class="relative z-10 max-w-container-max-width mx-auto px-margin-mobile flex flex-col min-h-screen">
+<!-- Custom Task-Focused Header -->
+<header class="flex justify-between items-center h-20 w-full pt-safe">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-on-surface transition-colors duration-300 group">
+<span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
+<span class="font-body-main text-body-main">返回日历</span>
+</button>
+<div class="font-header-title text-header-title text-primary/40 tracking-wide opacity-50">
+                Memory Vessel
+            </div>
+<div class="w-20"></div> <!-- Spacer for flex centering -->
+</header>
+<!-- Date Header Section -->
+<section class="mt-8 mb-12 relative">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2 drop-shadow-lg">10月24日</h1>
+<p class="font-body-main text-body-main text-secondary/80 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(249,189,34,0.6)]"></span>
+                2023年 · 星期二
+            </p>
+</section>
+<!-- Entries List -->
+<div class="flex flex-col gap-6 pb-24">
+<!-- Entry 1: Voice Recording -->
+<article class="group relative bg-surface-container rounded-xl p-4 md:p-6 flex flex-col md:flex-row gap-5 border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:bg-surface-container-high transition-all duration-500 overflow-hidden cursor-pointer">
+<!-- Inner Glow Effect -->
+<div class="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+<!-- Thumbnail Area -->
+<div class="w-full md:w-32 h-32 rounded-lg bg-surface-dim border border-white/5 shadow-inner flex-shrink-0 relative overflow-hidden flex items-center justify-center group-hover:border-secondary/30 transition-colors duration-500">
+<!-- Abstract Waveform representation -->
+<div class="absolute inset-0 flex items-center justify-center gap-1 px-4 opacity-70 group-hover:opacity-100 transition-opacity">
+<div class="w-1.5 h-8 bg-secondary/60 rounded-full group-hover:bg-secondary group-hover:shadow-[0_0_8px_#cebdff] transition-all"></div>
+<div class="w-1.5 h-12 bg-secondary/40 rounded-full group-hover:bg-secondary group-hover:shadow-[0_0_8px_#cebdff] transition-all delay-75"></div>
+<div class="w-1.5 h-6 bg-secondary/80 rounded-full group-hover:bg-secondary group-hover:shadow-[0_0_8px_#cebdff] transition-all delay-100"></div>
+<div class="w-1.5 h-10 bg-secondary/50 rounded-full group-hover:bg-secondary group-hover:shadow-[0_0_8px_#cebdff] transition-all delay-150"></div>
+</div>
+<div class="absolute bottom-2 right-2 bg-background/80 backdrop-blur-md rounded-full p-1 border border-white/10">
+<span class="material-symbols-outlined text-[16px] text-secondary" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex flex-col justify-center flex-grow z-10">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-header-title text-header-title text-on-surface group-hover:text-secondary transition-colors duration-300">深夜的思绪</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant bg-surface-container-lowest px-2 py-1 rounded border border-white/5">23:45</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mb-4">
+                        今天感觉有些疲惫，但看着窗外的雨，心里反而平静下来了。关于那个项目的担忧，也许明天再看会有新的解法...
+                    </p>
+<div class="flex items-center gap-4 mt-auto text-on-surface-variant">
+<div class="flex items-center gap-1.5 font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+                            03:12
+                        </div>
+<div class="flex items-center gap-1.5 font-label-caps text-label-caps text-tertiary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+                            播放
+                        </div>
+</div>
+</div>
+</article>
+<!-- Entry 2: Visual/Text Memory -->
+<article class="group relative bg-surface-container rounded-xl p-4 md:p-6 flex flex-col md:flex-row gap-5 border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:bg-surface-container-high transition-all duration-500 overflow-hidden cursor-pointer">
+<div class="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+<!-- Thumbnail Area (Image) -->
+<div class="w-full md:w-32 h-32 rounded-lg bg-surface-dim border border-white/5 shadow-inner flex-shrink-0 relative overflow-hidden group-hover:border-secondary/30 transition-colors duration-500">
+<img alt="Abstract dark reflection" class="w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-500 mix-blend-luminosity group-hover:mix-blend-normal" data-alt="A moody, abstract photograph of rain droplets on a dark glass surface, reflecting muted city lights in soft shades of violet and deep blue. The image evokes a profound sense of stillness and introspection. The lighting is low and cinematic, perfectly matching a dark-mode, ethereal memory container aesthetic. The focus is soft, blurring the background into a beautiful bokeh of glowing orbs against the deep night." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLjZEJnygac1x7VVEqPdISpVYlCiwbeLnOZd6AprDVu1FLZDfiHl8CJn_Ps1H_ds9WvODKwVeIsK67qjhSrTE0jXqWEOfmAKJ2fCbEPOavqRmo22JFeOBOD1m5G1I6QefHQI55oreAWa65uWX0Ow3y4ezCfvn3oqSAxtZu0vf-S4QlpaSkqHeLmQ0B3OOdS6_5ETVFIGoGytHGWXQb8cfW3eNX-X9QE8nddtdT7zrmGHxZ3HAsXyT6XnYPmbLUVAU0U2Obioeqvzek"/>
+<div class="absolute bottom-2 right-2 bg-background/80 backdrop-blur-md rounded-full p-1 border border-white/10">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">image</span>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex flex-col justify-center flex-grow z-10">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-header-title text-header-title text-on-surface group-hover:text-primary transition-colors duration-300">雨后的街道</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant bg-surface-container-lowest px-2 py-1 rounded border border-white/5">18:20</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mb-4">
+                        下班路上突然下起了大雨，躲在屋檐下看着霓虹灯在水洼里的倒影，仿佛整个城市变成了一个巨大的琉璃容器。
+                    </p>
+<div class="flex items-center gap-4 mt-auto text-on-surface-variant">
+<div class="flex items-center gap-1.5 font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px]">notes</span>
+                            文本纪要
+                        </div>
+</div>
+</div>
+</article>
+<!-- Entry 3: Short Voice Note -->
+<article class="group relative bg-surface-container rounded-xl p-4 md:p-6 flex flex-col md:flex-row gap-5 border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:bg-surface-container-high transition-all duration-500 overflow-hidden cursor-pointer">
+<div class="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+<!-- Thumbnail Area -->
+<div class="w-full md:w-32 h-32 rounded-lg bg-surface-dim border border-white/5 shadow-inner flex-shrink-0 relative overflow-hidden flex items-center justify-center group-hover:border-secondary/30 transition-colors duration-500">
+<div class="absolute inset-0 flex items-center justify-center gap-1 px-4 opacity-50 group-hover:opacity-100 transition-opacity">
+<div class="w-1.5 h-4 bg-secondary/50 rounded-full group-hover:bg-secondary transition-all delay-75"></div>
+<div class="w-1.5 h-16 bg-secondary/70 rounded-full group-hover:bg-secondary group-hover:shadow-[0_0_8px_#cebdff] transition-all delay-100"></div>
+<div class="w-1.5 h-5 bg-secondary/50 rounded-full group-hover:bg-secondary transition-all delay-150"></div>
+</div>
+<div class="absolute bottom-2 right-2 bg-background/80 backdrop-blur-md rounded-full p-1 border border-white/10">
+<span class="material-symbols-outlined text-[16px] text-secondary" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex flex-col justify-center flex-grow z-10">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-header-title text-header-title text-on-surface group-hover:text-secondary transition-colors duration-300">晨间碎片</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant bg-surface-container-lowest px-2 py-1 rounded border border-white/5">08:15</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mb-4">
+                        做了一个奇怪的梦，想要马上记录下来免得忘记。关于一只在星空里游泳的鲸鱼...
+                    </p>
+<div class="flex items-center gap-4 mt-auto text-on-surface-variant">
+<div class="flex items-center gap-1.5 font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+                            00:45
+                        </div>
+</div>
+</div>
+</article>
+</div>
+</main>
+</body></html>

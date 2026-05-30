@@ -3,7 +3,9 @@ export const env = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
-  geminiApiKey: process.env.GEMINI_API_KEY ?? "",
+  glmApiKey: process.env.GLM_API_KEY ?? "",
+  glmVisionModel: process.env.GLM_VISION_MODEL ?? "glm-4.6v",
+  glmTtsVoice: process.env.GLM_TTS_VOICE ?? "xiaochen",
   encryptionKey: process.env.APP_ENCRYPTION_KEY ?? ""
 };
 
@@ -12,7 +14,7 @@ export function missingBackendConfig() {
     ["NEXT_PUBLIC_SUPABASE_URL", env.supabaseUrl],
     ["NEXT_PUBLIC_SUPABASE_ANON_KEY", env.supabaseAnonKey],
     ["SUPABASE_SERVICE_ROLE_KEY", env.supabaseServiceRoleKey],
-    ["GEMINI_API_KEY", env.geminiApiKey],
+    ["GLM_API_KEY", env.glmApiKey],
     ["APP_ENCRYPTION_KEY", env.encryptionKey]
   ]
     .filter(([, value]) => !value)

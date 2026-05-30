@@ -5,7 +5,7 @@ const maxBytes = 10 * 1024 * 1024;
 
 export async function POST(request: Request, { params }: { params: Promise<{ diaryId: string }> }) {
   const { diaryId } = await params;
-  const form = await request.formData();
+  const form = await request.formData() as any;
   const file = form.get("image");
   if (!(file instanceof File)) return fail("image file is required", 400);
   if (!allowed.has(file.type)) return fail("unsupported image type", 415);

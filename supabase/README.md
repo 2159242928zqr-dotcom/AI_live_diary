@@ -12,4 +12,4 @@
 5. 把 Project URL、anon key、service role key 填入 `.env.local`。
 6. 生成一个至少 32 字符的 `APP_ENCRYPTION_KEY`，也填入 `.env.local`。
 
-注意：`SUPABASE_SERVICE_ROLE_KEY` 和 `GEMINI_API_KEY` 只能放服务端环境变量，不能暴露到前端。
+注意：`SUPABASE_SERVICE_ROLE_KEY` 和 `GLM_API_KEY` 只能放服务端环境变量，不能暴露到前端。

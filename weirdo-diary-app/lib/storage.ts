@@ -37,9 +37,101 @@ export const defaultTagSettings = {
   moodTags: ["开心", "高兴", "平静", "疲惫", "期待", "难过"]
 };
 
+// 安全合并两个日记数组，过滤重复 ID
+function mergeDiaries(arr1: LocalDiary[], arr2: LocalDiary[]): LocalDiary[] {
+  const map = new Map<string, LocalDiary>();
+  
+  arr1.forEach((d) => {
+    if (d && d.id) {
+      map.set(d.id, d);
+    }
+  });
+  
+  arr2.forEach((d) => {
+    if (d && d.id) {
+      map.set(d.id, d);
+    }
+  });
+  
+  return Array.from(map.values());
+}
+
+// 自动三路合并旧版单一文件、未登录文件和专属账号文件，确保百分之百没有任何一篇日记会丢失
+export async function mergeAndMigrateAllLocalDiaries(): Promise<void> {
+  try {
+    const currentUserId = await getUserId();
+    const legacyFile = `${documentDirectory}diary-data.json`;
+    const sharedFile = `${documentDirectory}diary-data-shared.json`;
+    const activeFile = `${documentDirectory}diary-data-${currentUserId}.json`;
+
+    let allDiaries: LocalDiary[] = [];
+
+    // 1. 读取当前活跃库的数据
+    const activeInfo = await getInfoAsync(activeFile);
+    if (activeInfo.exists) {
+      try {
+        const raw = await readAsStringAsync(activeFile);
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          allDiaries = mergeDiaries(allDiaries, parsed);
+        }
+      } catch (e) {
+        console.warn("读取活跃日记库失败:", e);
+      }
+    }
+
+    // 2. 读取旧版单一数据库文件 diary-data.json
+    const legacyInfo = await getInfoAsync(legacyFile);
+    if (legacyInfo.exists) {
+      try {
+        const raw = await readAsStringAsync(legacyFile);
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          allDiaries = mergeDiaries(allDiaries, parsed);
+        }
+      } catch (e) {
+        console.warn("读取旧版单一数据库失败:", e);
+      }
+    }
+
+    // 3. 如果当前是已登录用户，还需要额外尝试合并不登录状态下（shared）可能产生的临时日记
+    const sharedInfo = await getInfoAsync(sharedFile);
+    if (currentUserId !== "shared" && sharedInfo.exists) {
+      try {
+        const raw = await readAsStringAsync(sharedFile);
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          allDiaries = mergeDiaries(allDiaries, parsed);
+        }
+      } catch (e) {
+        console.warn("读取未登录本地日记库失败:", e);
+      }
+    }
+
+    // 4. 将合并后的最终完整日记列表写回到当前活跃专属库中
+    if (allDiaries.length > 0) {
+      await writeAsStringAsync(activeFile, JSON.stringify(allDiaries, null, 2));
+      
+      // 5. 迁移成功后，清空旧版单一文件和未登录临时文件，防止未来删除的日记因重复合并而再次复活
+      if (legacyInfo.exists) {
+        await writeAsStringAsync(legacyFile, "[]");
+      }
+      if (currentUserId !== "shared" && sharedInfo.exists) {
+        await writeAsStringAsync(sharedFile, "[]");
+      }
+      console.log(`[Data Migration] 已成功完成三路本地数据合并并清理旧版文件，当前日记总数: ${allDiaries.length}`);
+    }
+  } catch (err) {
+    console.warn("合并本地日记数据库失败:", err);
+  }
+}
+
 // --- CRUD ---
 
 export async function initStorage(): Promise<void> {
+  // 先执行旧版数据自动三路合并迁移
+  await mergeAndMigrateAllLocalDiaries();
+
   const dataFile = await getDataFile();
   await Promise.all([
     ensureFile(dataFile, "[]"),
@@ -52,6 +144,9 @@ export async function initStorage(): Promise<void> {
 
 export async function loadAllDiaries(): Promise<LocalDiary[]> {
   try {
+    // 每次读取数据时确保已执行旧数据合并
+    await mergeAndMigrateAllLocalDiaries();
+
     const dataFile = await getDataFile();
     const info = await getInfoAsync(dataFile);
     if (!info.exists) {

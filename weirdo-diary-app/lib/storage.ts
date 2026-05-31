@@ -8,13 +8,29 @@ import {
   deleteAsync
 } from "expo-file-system/legacy";
 import { LocalDiary, LocalMessage, DiaryStatus, TagSettings } from "./types";
+import { supabase } from "./supabase";
 export type { TagSettings };
 
-const DATA_FILE = `${documentDirectory}diary-data.json`;
 const PHOTOS_DIR = `${documentDirectory}photos/`;
 const AUDIOS_DIR = `${documentDirectory}audios/`;
 const TAGS_FILE = `${documentDirectory}tag-settings.json`;
 const ACCOUNTS_FILE = `${documentDirectory}saved-accounts.json`;
+
+// 获取当前登录用户 ID，作为沙盒多用户隔离键
+async function getUserId(): Promise<string> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.id || "shared";
+  } catch {
+    return "shared";
+  }
+}
+
+// 动态获取当前用户专属的日记数据库 JSON 文件路径，保障多账号数据完全独立与隐私安全
+async function getDataFile(): Promise<string> {
+  const userId = await getUserId();
+  return `${documentDirectory}diary-data-${userId}.json`;
+}
 
 export const defaultTagSettings = {
   eventTags: ["旅游", "看电影", "聚会", "工作", "散步", "独处"],
@@ -24,8 +40,9 @@ export const defaultTagSettings = {
 // --- CRUD ---
 
 export async function initStorage(): Promise<void> {
+  const dataFile = await getDataFile();
   await Promise.all([
-    ensureFile(DATA_FILE, "[]"),
+    ensureFile(dataFile, "[]"),
     ensureFile(TAGS_FILE, JSON.stringify(defaultTagSettings)),
     ensureFile(ACCOUNTS_FILE, "[]"),
     ensureDir(PHOTOS_DIR),
@@ -35,7 +52,13 @@ export async function initStorage(): Promise<void> {
 
 export async function loadAllDiaries(): Promise<LocalDiary[]> {
   try {
-    const raw = await readAsStringAsync(DATA_FILE);
+    const dataFile = await getDataFile();
+    const info = await getInfoAsync(dataFile);
+    if (!info.exists) {
+      await writeAsStringAsync(dataFile, "[]");
+      return [];
+    }
+    const raw = await readAsStringAsync(dataFile);
     return JSON.parse(raw);
   } catch {
     return [];
@@ -50,7 +73,8 @@ export async function saveDiary(diary: LocalDiary): Promise<void> {
   } else {
     diaries.push(diary);
   }
-  await writeAsStringAsync(DATA_FILE, JSON.stringify(diaries, null, 2));
+  const dataFile = await getDataFile();
+  await writeAsStringAsync(dataFile, JSON.stringify(diaries, null, 2));
 }
 
 export async function getDiary(id: string): Promise<LocalDiary | null> {
@@ -76,7 +100,34 @@ export async function deleteDiary(id: string): Promise<void> {
 
   // 更新数据文件
   const remaining = diaries.filter((d) => d.id !== id);
-  await writeAsStringAsync(DATA_FILE, JSON.stringify(remaining, null, 2));
+  const dataFile = await getDataFile();
+  await writeAsStringAsync(dataFile, JSON.stringify(remaining, null, 2));
+}
+
+// 擦除当前账号所有本地数据与关联的物理照片和语音素材 (仅在注销删除账户时执行)
+export async function purgeUserDiaries(): Promise<void> {
+  try {
+    const diaries = await loadAllDiaries();
+    
+    // 1. 清除物理文件
+    const filesToDelete: string[] = [];
+    diaries.forEach((d) => {
+      if (d.imagePath) filesToDelete.push(d.imagePath);
+      d.messages.forEach((m) => {
+        if (m.audioPath) filesToDelete.push(m.audioPath);
+      });
+    });
+
+    await Promise.allSettled(
+      filesToDelete.map((f) => deleteAsync(f, { idempotent: true }))
+    );
+
+    // 2. 清除专属 json 文件
+    const dataFile = await getDataFile();
+    await deleteAsync(dataFile, { idempotent: true });
+  } catch (err) {
+    console.warn("擦除本地专属数据失败:", err);
+  }
 }
 
 // 按日期查询

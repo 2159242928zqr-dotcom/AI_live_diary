@@ -30,6 +30,7 @@ export function TagPicker({ label, tags, selected, onSelect }: TagPickerProps) {
               activeOpacity={0.7}
             >
               <Text
+                numberOfLines={1}
                 style={[
                   styles.tagText,
                   isSelected ? styles.selectedTagText : styles.unselectedTagText,
@@ -60,13 +61,17 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingVertical: 4,
-    gap: 8,
   },
   tag: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderWidth: 1.5,
+    marginRight: 8,
+    flexShrink: 0,
   },
   selectedTag: {
     backgroundColor: "#ede4d5", // deeper paper
@@ -79,6 +84,7 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 14,
     fontWeight: "600",
+    flexShrink: 0,
   },
   selectedTagText: {
     color: "#c6604a", // Clay Red

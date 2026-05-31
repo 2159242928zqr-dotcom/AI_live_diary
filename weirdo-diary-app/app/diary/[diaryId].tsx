@@ -27,6 +27,7 @@ export default function DiaryDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [showTranscripts, setShowTranscripts] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   // Edit fields
   const [editTitle, setEditTitle] = useState("");
@@ -139,6 +140,29 @@ export default function DiaryDetailScreen() {
     }
   };
 
+  const handleShowMenu = () => {
+    setShowMenu((prev) => !prev);
+  };
+
+  const handleBack = () => {
+    if (isEditing) {
+      // 退出编辑模式，撤销修改并还原文本
+      if (diary) {
+        setEditTitle(diary.title);
+        setEditSummary(diary.summary || "");
+        setEditContent(diary.content || "");
+      }
+      setIsEditing(false);
+    } else {
+      // 正常退出：停止语音并返回上一页
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+      router.back();
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -162,28 +186,81 @@ export default function DiaryDetailScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* 菜单背景点击遮罩：点击其他区域直接关闭菜单 */}
+      {showMenu && (
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        />
+      )}
+
+      {/* 右上角三点浮动下拉菜单 */}
+      {showMenu && (
+        <View style={styles.menuDropdown}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowMenu(false);
+              handleShare();
+            }}
+          >
+            <Ionicons name="share-social-outline" size={16} color="#8b7355" style={{ marginRight: 8 }} />
+            <Text style={styles.menuItemText}>分享日记</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.menuDivider} />
+          
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowMenu(false);
+              setIsEditing(true);
+            }}
+          >
+            <Ionicons name="create-outline" size={16} color="#8b7355" style={{ marginRight: 8 }} />
+            <Text style={styles.menuItemText}>编辑日记</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.menuDivider} />
+          
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowMenu(false);
+              handleDelete();
+            }}
+          >
+            <Ionicons name="trash-outline" size={16} color="#c6604a" style={{ marginRight: 8 }} />
+            <Text style={[styles.menuItemText, { color: "#c6604a" }]}>删除回忆</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => {
-            if (soundRef.current) {
-              soundRef.current.unloadAsync().catch(() => {});
-              soundRef.current = null;
-            }
-            router.back();
-          }}
+          onPress={handleBack}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="#8b7355" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>日记详情</Text>
-        <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
-          <Ionicons name="share-social-outline" size={24} color="#8b7355" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {isEditing ? "编辑日记" : "日记详情"}
+        </Text>
+        {!isEditing ? (
+          <TouchableOpacity onPress={handleShowMenu} style={styles.shareButton}>
+            <Ionicons name="ellipsis-horizontal" size={24} color="#8b7355" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 32 }} /> // 保持左右对称
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {diary.imagePath ? (
-          <Image source={{ uri: diary.imagePath }} style={styles.coverImage} />
+          <View style={styles.imageCard}>
+            <Image source={{ uri: diary.imagePath }} style={styles.diaryImage} />
+          </View>
         ) : null}
 
         <View style={styles.notebookPage}>
@@ -231,13 +308,13 @@ export default function DiaryDetailScreen() {
 
               <View style={styles.tagRow}>
                 {diary.eventTag ? (
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>{diary.eventTag}</Text>
+                  <View style={[styles.tag, { flexDirection: "row", alignItems: "center" }]}>
+                    <Text style={styles.tagText} numberOfLines={1}>{diary.eventTag}</Text>
                   </View>
                 ) : null}
                 {diary.moodTag ? (
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>{diary.moodTag}</Text>
+                  <View style={[styles.tag, { flexDirection: "row", alignItems: "center" }]}>
+                    <Text style={styles.tagText} numberOfLines={1}>{diary.moodTag}</Text>
                   </View>
                 ) : null}
               </View>
@@ -247,17 +324,6 @@ export default function DiaryDetailScreen() {
               <View style={styles.divider} />
               
               <Text style={styles.contentText}>{diary.content}</Text>
-              
-              <View style={styles.actionsRow}>
-                <TouchableOpacity style={styles.actionButton} onPress={() => setIsEditing(true)}>
-                  <Ionicons name="create-outline" size={16} color="#faf6ef" />
-                  <Text style={styles.actionButtonText}>编辑</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionButton, styles.deleteBtn]} onPress={handleDelete}>
-                  <Ionicons name="trash-outline" size={16} color="#faf6ef" />
-                  <Text style={styles.actionButtonText}>删除</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           )}
 
@@ -343,9 +409,24 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
-  coverImage: {
+  imageCard: {
+    backgroundColor: "#faf6ef", // light paper card
+    borderWidth: 1,
+    borderColor: "#d4c5a9", // paper border
+    borderRadius: 16,
+    padding: 6,
+    marginHorizontal: 16,
+    marginTop: 16,
+    shadowColor: "#2c1810", // soft brown shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  diaryImage: {
     width: "100%",
-    height: 280,
+    height: 220,
+    borderRadius: 12,
     resizeMode: "cover",
   },
   notebookPage: {
@@ -382,11 +463,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   tagText: {
     fontSize: 12,
     color: "#8b7355",
     fontWeight: "600",
+    flexShrink: 0,
   },
   summaryText: {
     fontSize: 15,
@@ -563,5 +649,47 @@ const styles = StyleSheet.create({
   backLinkText: {
     color: "#c6604a",
     fontWeight: "700",
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 999,
+  },
+  menuDropdown: {
+    position: "absolute",
+    top: 56, // 直接挂在 header 下方
+    right: 16,
+    backgroundColor: "#faf6ef", // warm paper card background
+    borderWidth: 1,
+    borderColor: "#d4c5a9",
+    borderRadius: 12,
+    paddingVertical: 4,
+    width: 140,
+    zIndex: 1000,
+    shadowColor: "#2c1810",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuItemText: {
+    fontSize: 14,
+    color: "#2c1810",
+    fontWeight: "600",
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: "#ede4d5",
+    marginHorizontal: 10,
   },
 });

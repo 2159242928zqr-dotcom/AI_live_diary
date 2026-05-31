@@ -49,6 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error("注册失败");
 
+    // Supabase 启用了 Prevent User Enumeration 安全策略时，如果邮箱已注册，其 signUp 会成功返回一个没有 identities 的 Mock User
+    if (data.user.identities && data.user.identities.length === 0) {
+      throw new Error("User already exists");
+    }
+
     // 同步 profile 到后端
     try {
       await apiPost("/api/auth/profile", {
@@ -64,7 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn("退出登录遇到网络错误，已安全忽略并强行在本地注销:", e);
+    }
   };
 
   return (
@@ -77,5 +86,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => useContext(AuthContext);
 
 function generateInviteCode() {
-  return `MV-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+  return `gk-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }

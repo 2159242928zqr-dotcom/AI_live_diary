@@ -189,13 +189,13 @@ export default function CalendarScreen() {
                   </Text>
                   <View style={styles.tagRow}>
                     {diary.eventTag ? (
-                      <View style={styles.tag}>
-                        <Text style={styles.tagText}>{diary.eventTag}</Text>
+                      <View style={[styles.tag, { flexDirection: "row", alignItems: "center" }]}>
+                        <Text style={styles.tagText} numberOfLines={1}>{diary.eventTag}</Text>
                       </View>
                     ) : null}
                     {diary.moodTag ? (
-                      <View style={styles.tag}>
-                        <Text style={styles.tagText}>{diary.moodTag}</Text>
+                      <View style={[styles.tag, { flexDirection: "row", alignItems: "center" }]}>
+                        <Text style={styles.tagText} numberOfLines={1}>{diary.moodTag}</Text>
                       </View>
                     ) : null}
                   </View>
@@ -384,11 +384,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   tagText: {
     fontSize: 9,
     color: "#8b7355",
     fontWeight: "600",
+    flexShrink: 0,
   },
   emptyContainer: {
     backgroundColor: "#faf6ef",

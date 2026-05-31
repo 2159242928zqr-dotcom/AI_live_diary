@@ -161,19 +161,20 @@ export default function LoginPage() {
   const handleLoginWithSaved = async (account: SavedAccount) => {
     setLoading(true);
     try {
-      // If the account has no password (e.g. logged in via OTP), fill email and switch to OTP mode
+      // If the account has no password (e.g. logged in via OTP), fill email and switch to Password mode for manual entry
       if (!account.password) {
         setEmail(account.email);
+        setPassword("");
         setMode("login");
-        setLoginSubMode("otp");
-        Alert.alert("提示", "该账号未保存密码，已为您自动填写邮箱，请获取邮箱验证码登录。");
+        setLoginSubMode("password");
+        Alert.alert("提示", "该账号本地未保存密码，已自动为您填写邮箱，请输入密码进行登录。");
         setLoading(false);
         return;
       }
 
       // First log out any existing session to clear local dirty state
       try {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: "local" });
       } catch (e) {
         console.warn("Sign out prior to saved login ignored:", e);
       }
@@ -191,8 +192,8 @@ export default function LoginPage() {
 
       const user = data.user;
       const userMetadata = user.user_metadata;
-      const username = userMetadata?.username || account.username || account.email.split("@")[0];
-      const avatarUrl = userMetadata?.avatarUrl || account.avatarUrl || `gradient:${Math.floor(Math.random() * 6)}`;
+      const username = account.username || userMetadata?.username || account.email.split("@")[0];
+      const avatarUrl = account.avatarUrl || userMetadata?.avatarUrl || `gradient:${Math.floor(Math.random() * 6)}`;
 
       await saveAccountToList({
         userId: user.id,
@@ -334,8 +335,10 @@ export default function LoginPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const userMetadata = user.user_metadata;
-        const username = userMetadata?.username || recoveryEmail.trim().split("@")[0];
-        const avatarUrl = userMetadata?.avatarUrl || `gradient:${Math.floor(Math.random() * 6)}`;
+        const existingList = await getSavedAccounts();
+        const match = existingList.find((a) => a.email.toLowerCase() === recoveryEmail.trim().toLowerCase());
+        const username = match?.username || userMetadata?.username || recoveryEmail.trim().split("@")[0];
+        const avatarUrl = match?.avatarUrl || userMetadata?.avatarUrl || `gradient:${Math.floor(Math.random() * 6)}`;
         const fallbackCode = `gk-${user.id.slice(0, 6).toUpperCase()}`;
 
         await saveAccountToList({
@@ -389,8 +392,13 @@ export default function LoginPage() {
 
           const user = data.user;
           const userMetadata = user.user_metadata;
-          const username = userMetadata?.username || email.trim().split("@")[0];
-          const avatarUrl = userMetadata?.avatarUrl || `gradient:${Math.floor(Math.random() * 6)}`;
+          
+          // Read existing local cache to avoid overwriting updated local details with stale server data
+          const existingList = await getSavedAccounts();
+          const match = existingList.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
+
+          const username = match?.username || userMetadata?.username || email.trim().split("@")[0];
+          const avatarUrl = match?.avatarUrl || userMetadata?.avatarUrl || `gradient:${Math.floor(Math.random() * 6)}`;
 
           await saveAccountToList({
             userId: user.id,
@@ -398,7 +406,7 @@ export default function LoginPage() {
             password: password,
             username: username,
             avatarUrl: avatarUrl,
-            inviteCode: `gk-${user.id.slice(0, 6).toUpperCase()}`
+            inviteCode: match?.inviteCode || `gk-${user.id.slice(0, 6).toUpperCase()}`
           });
         } else {
           // OTP Login Flow
@@ -417,16 +425,20 @@ export default function LoginPage() {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             const userMetadata = user.user_metadata;
-            const username = userMetadata?.username || email.trim().split("@")[0];
-            const avatarUrl = userMetadata?.avatarUrl || `gradient:${Math.floor(Math.random() * 6)}`;
+            // Read existing local cache to avoid overwriting updated local details with stale server data
+            const existingList = await getSavedAccounts();
+            const match = existingList.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
+
+            const username = match?.username || userMetadata?.username || email.trim().split("@")[0];
+            const avatarUrl = match?.avatarUrl || userMetadata?.avatarUrl || `gradient:${Math.floor(Math.random() * 6)}`;
 
             await saveAccountToList({
               userId: user.id,
               email: email.trim(),
-              password: "", // 邮箱验证码登录可不留存本地密码，或保留为空
+              password: match?.password || "", // Keep password if it was already stored locally
               username: username,
               avatarUrl: avatarUrl,
-              inviteCode: `gk-${user.id.slice(0, 6).toUpperCase()}`
+              inviteCode: match?.inviteCode || `gk-${user.id.slice(0, 6).toUpperCase()}`
             });
           }
         }
@@ -492,8 +504,9 @@ export default function LoginPage() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.bookCover}>
+    <View style={{ flex: 1, backgroundColor: "#f5f0e8" }}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.bookCover}>
         <View style={styles.header}>
           <Image
             source={{ uri: "https://your-placeholder-logo.png" }}
@@ -879,6 +892,7 @@ export default function LoginPage() {
           账号与数据完全私有 · 数据只保留在您当前设备的本地
         </Text>
       </View>
+    </ScrollView>
 
       {/* Custom Hand-crafted Theme Alert Modal */}
       <Modal
@@ -925,7 +939,7 @@ export default function LoginPage() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 

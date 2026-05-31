@@ -45,7 +45,10 @@ export default function CalendarScreen() {
   const weeks = useMemo(() => {
     const result = [];
     for (let i = 0; i < cells.length; i += 7) {
-      result.push(cells.slice(i, i + 7));
+      const week = cells.slice(i, i + 7);
+      if (week.some((day) => day !== null)) {
+        result.push(week);
+      }
     }
     return result;
   }, [cells]);
@@ -243,11 +246,11 @@ const styles = StyleSheet.create({
   },
   calendarCard: {
     backgroundColor: "#faf6ef",
-    margin: 16,
+    margin: 12,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#d4c5a9",
-    padding: 16,
+    padding: 12,
     shadowColor: "#2c1810",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -258,25 +261,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 10,
   },
   monthNav: {
-    padding: 8,
+    padding: 6,
   },
   monthTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#2c1810",
   },
   weekdayRow: {
     flexDirection: "row",
     width: "100%",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   weekdayText: {
     flex: 1,
     textAlign: "center",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: "#8b7355",
     opacity: 0.8,
@@ -287,15 +290,15 @@ const styles = StyleSheet.create({
   weekRow: {
     flexDirection: "row",
     width: "100%",
-    marginBottom: 8,
+    marginBottom: 4,
   },
   cellBlank: {
     flex: 1,
-    aspectRatio: 1,
+    aspectRatio: 1.15,
   },
   cell: {
     flex: 1,
-    aspectRatio: 1,
+    aspectRatio: 1.15,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
@@ -308,7 +311,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ede4d5",
   },
   cellText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#2c1810",
     textAlign: "center",
@@ -326,7 +329,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     position: "absolute",
-    bottom: 6,
+    bottom: 4,
   },
   dotActive: {
     backgroundColor: "#c6604a",

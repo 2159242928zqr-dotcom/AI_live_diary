@@ -143,29 +143,13 @@ export default function SettingsScreen() {
         const match = saved.find((a) => a.email.toLowerCase() === user.email?.toLowerCase());
         const userMetadata = user.user_metadata;
         
-        const localUsername = match?.username || userMetadata?.username || user.email?.split("@")[0] || "";
-        const localAvatarUrl = match?.avatarUrl || userMetadata?.avatarUrl || "gradient:0";
+        const localUsername = match?.username || user.email?.split("@")[0] || "";
+        const localAvatarUrl = match?.avatarUrl || "gradient:0";
         
         // Apply local sandboxed details immediately for offline-first responsiveness
         setUsername(localUsername);
         setAvatarUrl(localAvatarUrl);
 
-        // If local profile differs from remote metadata, attempt silent background sync to Supabase
-        const remoteUsername = userMetadata?.username || "";
-        const remoteAvatarUrl = userMetadata?.avatarUrl || "";
-        
-        if (localUsername !== remoteUsername || localAvatarUrl !== remoteAvatarUrl) {
-          try {
-            const { error } = await supabase.auth.updateUser({
-              data: { username: localUsername, avatarUrl: localAvatarUrl }
-            });
-            if (!error) {
-              console.log("后台静默同步：本地手账资料已成功同步到 Supabase 云端");
-            }
-          } catch (syncErr) {
-            console.warn("后台自动同步手账资料失败（处于离线状态，待下次重试）:", syncErr);
-          }
-        }
       }).catch((e) => {
         console.warn("读取本地账号凭证失败:", e);
         // Fallback to Supabase cloud metadata directly
@@ -212,26 +196,9 @@ export default function SettingsScreen() {
       return;
     }
     setIsSavingProfile(true);
-    let supabaseSuccess = false;
-    let errorDetail = "";
-    try {
-      if (user) {
-        // 1. 同步昵称与头像到 Supabase Auth 元数据
-        const { error: metaError } = await supabase.auth.updateUser({
-          data: { username: editUsername.trim(), avatarUrl: editAvatarUrl }
-        });
-        if (metaError) {
-          throw metaError;
-        }
-        supabaseSuccess = true;
-      }
-    } catch (e) {
-      errorDetail = e instanceof Error ? e.message : "未知错误";
-      console.warn("同步到 Supabase Auth 失败，将开启本地离线保存模式:", errorDetail);
-    }
 
     try {
-      // 2. 无论 Supabase 云端同步成功与否，本地一定要更新并持久化以支持纯本地离线运行
+      // 无论 Supabase 云端同步成功与否，本地一定要更新并持久化以支持纯本地离线运行
       const saved = await getSavedAccounts();
       const currentEmail = user?.email || "";
       const currentUserId = user?.id || "shared";
@@ -253,12 +220,7 @@ export default function SettingsScreen() {
       setUsername(editUsername.trim());
       setAvatarUrl(editAvatarUrl);
 
-      if (supabaseSuccess) {
-        Alert.alert("保存成功", "个人资料已同步！");
-      } else {
-        // Friendly offline reminder instead of blocking the user from saving their own details!
-        Alert.alert("保存成功", "由于您当前处于离线或网络异常，个人资料已安全在本地日记本中保存更新。");
-      }
+      Alert.alert("保存成功", "个人信息只保存在本地。");
       setAccountSubSection("menu");
     } catch (localErr) {
       Alert.alert("保存失败", localErr instanceof Error ? localErr.message : "保存出错了，请重试。");
@@ -422,13 +384,7 @@ export default function SettingsScreen() {
     setIsSavingProfile(true);
 
     try {
-      try {
-        await logout();
-      } catch (e) {
-        console.warn("切换账号注销捕获到异常已吞掉:", e);
-      }
-      // 等待 signOut 状态传播
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // 直接登录新账号，这会自动覆盖当前 Session，避免频繁的注销和页面重定向抖动
       await login(account.email, account.password);
 
       // 更新在本地保存账号列表中的最后使用时间

@@ -70,9 +70,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      // Force clear local authentication states immediately for offline-first responsiveness
+      setUser(null);
+      setSession(null);
+      // Use local scope to sign out instantly without blocking on server-side HTTP calls
+      await supabase.auth.signOut({ scope: "local" });
     } catch (e) {
       console.warn("退出登录遇到网络错误，已安全忽略并强行在本地注销:", e);
+      // Fallback: force clear react context states to ensure UI responds
+      setUser(null);
+      setSession(null);
     }
   };
 

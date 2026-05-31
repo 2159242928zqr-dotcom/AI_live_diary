@@ -172,15 +172,6 @@ export default function LoginPage() {
         return;
       }
 
-      // First log out any existing session to clear local dirty state
-      try {
-        await supabase.auth.signOut({ scope: "local" });
-      } catch (e) {
-        console.warn("Sign out prior to saved login ignored:", e);
-      }
-
-      // Small delay for clean session state propagation
-      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Direct sign in using supabase client to get immediate response & user object
       const { data, error } = await supabase.auth.signInWithPassword({

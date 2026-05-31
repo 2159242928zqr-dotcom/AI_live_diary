@@ -2030,16 +2030,20 @@ const styles = StyleSheet.create({
   },
   tag: {
     backgroundColor: "#ede4d5",
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 14,
     borderWidth: 0.5,
     borderColor: "#d4c5a9",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   tagText: {
     fontSize: 12,
     color: "#8b7355",
     fontWeight: "600",
+    paddingHorizontal: 3, // 为 Android 粗体渲染预留额外测算宽度，彻底解决尾部截断 bug
   },
   tagDeleteText: {
     fontSize: 11,

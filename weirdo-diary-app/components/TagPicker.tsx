@@ -30,13 +30,12 @@ export function TagPicker({ label, tags, selected, onSelect }: TagPickerProps) {
               activeOpacity={0.7}
             >
               <Text
-                numberOfLines={1}
                 style={[
                   styles.tagText,
                   isSelected ? styles.selectedTagText : styles.unselectedTagText,
                 ]}
               >
-                {tag}
+                {tag + "  "}
               </Text>
             </TouchableOpacity>
           );
@@ -63,14 +62,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   tag: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderWidth: 1.5,
     marginRight: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
   },
   selectedTag: {

@@ -309,12 +309,12 @@ export default function DiaryDetailScreen() {
               <View style={styles.tagRow}>
                 {diary.eventTag ? (
                   <View style={[styles.tag, { flexDirection: "row", alignItems: "center" }]}>
-                    <Text style={styles.tagText} numberOfLines={1}>{diary.eventTag}</Text>
+                    <Text style={styles.tagText}>{diary.eventTag + "  "}</Text>
                   </View>
                 ) : null}
                 {diary.moodTag ? (
                   <View style={[styles.tag, { flexDirection: "row", alignItems: "center" }]}>
-                    <Text style={styles.tagText} numberOfLines={1}>{diary.moodTag}</Text>
+                    <Text style={styles.tagText}>{diary.moodTag + "  "}</Text>
                   </View>
                 ) : null}
               </View>

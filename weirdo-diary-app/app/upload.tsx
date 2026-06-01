@@ -12,7 +12,7 @@ import {
   Animated,
   Platform
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { savePhoto, saveDiary, getTagSettings, defaultTagSettings } from "@/lib/storage";
 import { LocalDiary } from "@/lib/types";
@@ -24,12 +24,16 @@ import { useThemeStore } from "@/lib/tabState";
 
 export default function UploadScreen() {
   const router = useRouter();
+  const { type } = useLocalSearchParams<{ type?: string }>();
+  const isManual = type === "manual";
+  
   const insets = useSafeAreaInsets();
   const { theme } = useThemeStore();
   const styles = getDynamicStyles(theme);
   const isStellar = theme === "stellar";
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [title, setTitle] = useState("");
+  const [manualContent, setManualContent] = useState("");
   const [eventTags, setEventTags] = useState<string[]>(defaultTagSettings.eventTags);
   const [moodTags, setMoodTags] = useState<string[]>(defaultTagSettings.moodTags);
   const [eventTag, setEventTag] = useState("");
@@ -99,6 +103,48 @@ export default function UploadScreen() {
   };
 
   const handleStart = async () => {
+    if (isManual) {
+      if (!manualContent.trim()) {
+        Alert.alert("提示", "请输入手写日记的正文内容。");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const localPhotoPath = imageUri ? await savePhoto(imageUri) : "";
+        const local = new Date();
+        const y = local.getFullYear();
+        const m = String(local.getMonth() + 1).padStart(2, "0");
+        const d = String(local.getDate()).padStart(2, "0");
+        const localDateStr = `${y}-${m}-${d}`;
+        const now = local.toISOString();
+        const diaryId = `diary-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        
+        const manualDiary: LocalDiary = {
+          id: diaryId,
+          title: title.trim() || "今天的手写手账",
+          summary: manualContent.slice(0, 32).trim() + (manualContent.length > 32 ? "..." : ""),
+          content: manualContent.trim(),
+          date: localDateStr,
+          createdAt: now,
+          imagePath: localPhotoPath,
+          eventTag: eventTag || "手写",
+          moodTag: moodTag || "平静",
+          status: "generated", // Skip chat entirely
+          messages: [],
+        };
+
+        await saveDiary(manualDiary);
+        router.replace(`/diary/${diaryId}`);
+      } catch (error) {
+        Alert.alert("创建失败", error instanceof Error ? error.message : "未知错误");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Original AI Capsule Flow
     if (!imageUri) {
       Alert.alert("提示", "必须先上传一张照片才能开启日记对话。");
       return;
@@ -123,8 +169,8 @@ export default function UploadScreen() {
         date: localDateStr,
         createdAt: now,
         imagePath: localPhotoPath,
-        eventTag,
-        moodTag,
+        eventTag: eventTag || "旅行",
+        moodTag: moodTag || "平静",
         status: "image_uploaded",
         messages: [],
       };
@@ -145,7 +191,9 @@ export default function UploadScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back-outline" size={22} color={isStellar ? "#ffdfa9" : "#8b7355"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>创建记忆胶囊</Text>
+        <Text style={styles.headerTitle}>
+          {isManual ? (isStellar ? "封存手写手账" : "创建手写日记") : "创建记忆胶囊"}
+        </Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -174,9 +222,14 @@ export default function UploadScreen() {
               <View style={styles.uploadPlaceholder}>
                 <Animated.View style={{ opacity: iconBreathe, alignItems: "center" }}>
                   <Ionicons name="camera-outline" size={isStellar ? 36 : 48} color={isStellar ? "#ffdf9f" : "#d4c5a9"} style={{ marginBottom: 4 }} />
-                  <Text style={styles.placeholderTitle}>寻找今日影像起点</Text>
+                  <Text style={styles.placeholderTitle}>
+                    {isManual ? "添加今日影像（可选）" : "寻找今日影像起点"}
+                  </Text>
                   <Text style={styles.placeholderSub}>
-                    {isStellar ? "点击拍照或从相册选择一份影像碎片" : "点击上传一张今日照片"}
+                    {isManual 
+                      ? (isStellar ? "点击为这篇手账附上一份影像碎片" : "点击上传一张插图照片")
+                      : (isStellar ? "点击拍照或从相册选择一份影像碎片" : "点击上传一张今日照片")
+                    }
                   </Text>
                 </Animated.View>
               </View>
@@ -197,23 +250,57 @@ export default function UploadScreen() {
             />
           </View>
 
+          {/* Multi-line Content input box for Manual Handwritten Mode */}
+          {isManual && (
+            <View style={styles.field}>
+              <Text style={styles.label}>日记正文</Text>
+              <TextInput
+                style={[
+                  styles.input, 
+                  { 
+                    height: 160, 
+                    textAlignVertical: "top", 
+                    paddingTop: 12, 
+                    paddingBottom: 12 
+                  }
+                ]}
+                placeholder="用文字记录下此刻的细碎想法与温热时光..."
+                placeholderTextColor={isStellar ? "rgba(255, 223, 169, 0.35)" : "#8b7355"}
+                value={manualContent}
+                onChangeText={setManualContent}
+                multiline={true}
+                editable={!loading}
+              />
+            </View>
+          )}
+
           {/* Tag Pickers upgraded to glassy capsules */}
           <TagPicker label="事件分类" tags={eventTags} selected={eventTag} onSelect={setEventTag} />
           <TagPicker label="情绪状态" tags={moodTags} selected={moodTag} onSelect={setMoodTag} />
 
           {/* Submit golden glowing button */}
           <TouchableOpacity
-            style={[styles.startButton, (!imageUri || loading) && styles.disabledButton]}
+            style={[
+              styles.startButton, 
+              (loading || (isManual ? !manualContent.trim() : !imageUri)) && styles.disabledButton
+            ]}
             onPress={handleStart}
-            disabled={!imageUri || loading}
+            disabled={loading || (isManual ? !manualContent.trim() : !imageUri)}
             activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color={isStellar ? "#0c1324" : "#faf6ef"} />
             ) : (
               <>
-                <Ionicons name="sparkles" size={16} color={isStellar ? "#0c1324" : "#faf6ef"} style={{ marginRight: 6 }} />
-                <Text style={styles.startText}>开启语音日记</Text>
+                <Ionicons 
+                  name={isManual ? "journal-outline" : "sparkles"} 
+                  size={16} 
+                  color={isStellar ? "#0c1324" : "#faf6ef"} 
+                  style={{ marginRight: 6 }} 
+                />
+                <Text style={styles.startText}>
+                  {isManual ? "保存手写日记" : "开启语音日记"}
+                </Text>
               </>
             )}
           </TouchableOpacity>

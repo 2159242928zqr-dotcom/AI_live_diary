@@ -1009,7 +1009,7 @@ export default function HomeScreen() {
                     ]}
                     onPress={() => {
                       setShowCreateTypeModal(false);
-                      handleCreateHandwrittenDiary();
+                      router.push("/upload?type=manual");
                     }}
                     activeOpacity={0.8}
                   >

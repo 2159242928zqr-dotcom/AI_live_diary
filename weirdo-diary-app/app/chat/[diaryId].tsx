@@ -821,7 +821,7 @@ export default function ChatScreen() {
                   <TextInput
                     style={styles.glassTextInput}
                     placeholder={locked ? "请稍候..." : "用文字记录下此刻的细碎想法..."}
-                    placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                    placeholderTextColor={isStellar ? "rgba(255, 223, 169, 0.4)" : "#8b7355"}
                     value={text}
                     onChangeText={setText}
                     editable={!locked}

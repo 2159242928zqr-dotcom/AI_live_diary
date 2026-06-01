@@ -535,11 +535,13 @@ export default function LoginPage() {
     outputRange: [0, 0.4, 1],
   });
 
-  const renderLoginContent = () => (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+  const renderLoginContent = () => {
+    const placeholderColor = isStellar ? "rgba(255, 223, 169, 0.4)" : "#8b7355";
+    return (
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
           {/* Welcome Screen Cover Block (Ceremonial Entrance) */}
           {!showAuthPanel && (
             <Animated.View style={[styles.welcomeCover, { transform: [{ translateY: welcomeY }], opacity: welcomeOpacity }]}>
@@ -569,7 +571,7 @@ export default function LoginPage() {
                 <View style={styles.glassBookCover}>
                   <View style={styles.header}>
                     <TouchableOpacity style={styles.authBackBtn} onPress={() => triggerTransitionToAuth(false)}>
-                      <Ionicons name="chevron-back" size={20} color="#ffdfa9" />
+                      <Ionicons name="chevron-back" size={20} color={isStellar ? "#ffdfa9" : "#8b7355"} />
                       <Text style={styles.authBackText}>返回</Text>
                     </TouchableOpacity>
                     <Text style={styles.title}>Memory Vessel</Text>
@@ -587,7 +589,7 @@ export default function LoginPage() {
                           <TextInput
                             style={[styles.input, { flex: 1 }]}
                             placeholder="请输入您的 QQ 邮箱"
-                            placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                            placeholderTextColor={placeholderColor}
                             value={recoveryEmail}
                             onChangeText={setRecoveryEmail}
                             keyboardType="default"
@@ -615,7 +617,7 @@ export default function LoginPage() {
                         <TextInput
                           style={styles.input}
                           placeholder="请输入邮箱收到的6位验证码"
-                          placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                          placeholderTextColor={placeholderColor}
                           value={recoveryOtpToken}
                           onChangeText={setRecoveryOtpToken}
                           keyboardType="number-pad"
@@ -629,7 +631,7 @@ export default function LoginPage() {
                         <TextInput
                           style={styles.input}
                           placeholder="至少 6 位新密码"
-                          placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                          placeholderTextColor={placeholderColor}
                           value={recoveryPassword}
                           onChangeText={setRecoveryPassword}
                           secureTextEntry
@@ -643,7 +645,7 @@ export default function LoginPage() {
                         <TextInput
                           style={styles.input}
                           placeholder="再次输入新密码"
-                          placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                          placeholderTextColor={placeholderColor}
                           value={recoveryConfirmPassword}
                           onChangeText={setRecoveryConfirmPassword}
                           secureTextEntry
@@ -777,7 +779,7 @@ export default function LoginPage() {
                               <TextInput
                                 style={[styles.input, { flex: 1 }]}
                                 placeholder="例如 123456@qq.com"
-                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                placeholderTextColor={placeholderColor}
                                 value={email}
                                 onChangeText={setEmail}
                                 keyboardType="default"
@@ -809,7 +811,7 @@ export default function LoginPage() {
                               <TextInput
                                 style={[styles.input, { flex: 1 }]}
                                 placeholder="例如 123456@qq.com"
-                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                placeholderTextColor={placeholderColor}
                                 value={email}
                                 onChangeText={setEmail}
                                 keyboardType="default"
@@ -845,7 +847,7 @@ export default function LoginPage() {
                             <TextInput
                               style={styles.input}
                               placeholder="至少 6 位"
-                              placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                              placeholderTextColor={placeholderColor}
                               value={password}
                               onChangeText={setPassword}
                               secureTextEntry
@@ -861,7 +863,7 @@ export default function LoginPage() {
                             <TextInput
                               style={styles.input}
                               placeholder="请输入邮箱收到的6位验证码"
-                              placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                              placeholderTextColor={placeholderColor}
                               value={otpToken}
                               onChangeText={setOtpToken}
                               keyboardType="number-pad"
@@ -878,7 +880,7 @@ export default function LoginPage() {
                               <TextInput
                                 style={styles.input}
                                 placeholder="至少 6 位"
-                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                placeholderTextColor={placeholderColor}
                                 value={password}
                                 onChangeText={setPassword}
                                 secureTextEntry
@@ -892,7 +894,7 @@ export default function LoginPage() {
                               <TextInput
                                 style={styles.input}
                                 placeholder="再次输入密码"
-                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                placeholderTextColor={placeholderColor}
                                 value={confirmPassword}
                                 onChangeText={setConfirmPassword}
                                 secureTextEntry
@@ -906,7 +908,7 @@ export default function LoginPage() {
                               <TextInput
                                 style={styles.input}
                                 placeholder="请输入 QQ 邮箱收到的6位验证码"
-                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                placeholderTextColor={placeholderColor}
                                 value={regOtpToken}
                                 onChangeText={setRegOtpToken}
                                 keyboardType="number-pad"
@@ -920,7 +922,7 @@ export default function LoginPage() {
                               <TextInput
                                 style={styles.input}
                                 placeholder="如有邀请码，请输入"
-                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                placeholderTextColor={placeholderColor}
                                 value={inviteCode}
                                 onChangeText={setInviteCode}
                                 autoCapitalize="characters"
@@ -1001,7 +1003,8 @@ export default function LoginPage() {
         </View>
       </Modal>
     </KeyboardAvoidingView>
-  );
+    );
+  };
 
   if (isStellar) {
     return (
@@ -1551,8 +1554,6 @@ const getDynamicStyles = (theme: "stellar" | "kraft") => {
     },
     authBackBtn: {
       ...staticStyles.authBackBtn,
-      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
-      borderColor: isStellar ? "rgba(255, 223, 169, 0.12)" : "#d4c5a9",
     },
     authBackText: {
       ...staticStyles.authBackText,

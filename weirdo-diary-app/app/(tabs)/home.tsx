@@ -870,7 +870,7 @@ export default function HomeScreen() {
   // --- RENDER 1: Dashboard Working Desk (History view) ---
   if (showDashboard) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: isStellar ? "#070a18" : "#f5f0e8" }}>
         {isStellar ? (
           <StellarBackground>
             <View style={[styles.dashboardContainer, { paddingTop: insets.top }]}>
@@ -1504,7 +1504,7 @@ export default function HomeScreen() {
     };
 
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: "#070a18" }}>
         <StellarBackground>{renderStellarPortal()}</StellarBackground>
       </View>
     );

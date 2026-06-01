@@ -1774,7 +1774,7 @@ export default function SettingsScreen() {
       {/* Global Loading Overlay */}
       {isSavingProfile && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#c6604a" />
+          <ActivityIndicator size="large" color={isStellar ? "#ffdfa9" : "#c6604a"} />
           <Text style={styles.loadingText}>正在处理中，请稍后...</Text>
         </View>
       )}
@@ -1828,7 +1828,11 @@ export default function SettingsScreen() {
   );
 
   if (isStellar) {
-    return <StellarBackground>{renderContent()}</StellarBackground>;
+    return (
+      <View style={{ flex: 1, backgroundColor: "#070a18" }}>
+        <StellarBackground>{renderContent()}</StellarBackground>
+      </View>
+    );
   }
   return renderContent();
 }
@@ -2773,6 +2777,14 @@ const getDynamicStyles = (theme: "stellar" | "kraft") => {
     alertMessage: {
       ...staticStyles.alertMessage,
       color: isStellar ? "rgba(255, 223, 169, 0.75)" : "#8b7355",
+    },
+    loadingOverlay: {
+      ...staticStyles.loadingOverlay,
+      backgroundColor: isStellar ? "rgba(7, 10, 24, 0.85)" : "rgba(245, 240, 232, 0.8)",
+    },
+    loadingText: {
+      ...staticStyles.loadingText,
+      color: isStellar ? "#ffdfa9" : "#8b7355",
     },
   };
 };

@@ -11,6 +11,9 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
+        sceneContainerStyle: {
+          backgroundColor: isStellar ? "#070a18" : "#faf6ef",
+        },
         tabBarStyle: {
           backgroundColor: isStellar ? "#070a18" : "#faf6ef", 
           borderTopColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#d4c5a9", 

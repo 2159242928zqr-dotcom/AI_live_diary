@@ -311,7 +311,7 @@ export default function UploadScreen() {
 
   if (isStellar) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: "#070a18" }}>
         <StellarBackground>
           {renderUploadContent()}
         </StellarBackground>

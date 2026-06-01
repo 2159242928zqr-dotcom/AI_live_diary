@@ -172,7 +172,7 @@ export default function DiaryDetailScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color="#c6604a" size="large" />
+        <ActivityIndicator color={isStellar ? "#ffdfa9" : "#c6604a"} size="large" />
       </View>
     );
   }
@@ -385,7 +385,7 @@ export default function DiaryDetailScreen() {
 
   if (isStellar) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: "#070a18" }}>
         <StellarBackground>
           {renderDetailContent()}
         </StellarBackground>
@@ -819,6 +819,10 @@ const getDynamicStyles = (theme: "stellar" | "kraft") => {
     menuDivider: {
       ...staticStyles.menuDivider,
       backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+    },
+    loadingContainer: {
+      ...staticStyles.loadingContainer,
+      backgroundColor: isStellar ? "#070a18" : "#f5f0e8",
     },
   };
 };

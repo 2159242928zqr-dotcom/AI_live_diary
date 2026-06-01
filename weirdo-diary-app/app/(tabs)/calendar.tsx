@@ -223,7 +223,7 @@ export default function CalendarScreen() {
 
   if (isStellar) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: "#070a18" }}>
         <StellarBackground>
           {renderCalendarContent()}
         </StellarBackground>

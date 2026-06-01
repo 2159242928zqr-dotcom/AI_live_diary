@@ -1008,7 +1008,7 @@ export default function LoginPage() {
 
   if (isStellar) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: "#070a18" }}>
         <StellarBackground>
           {renderLoginContent()}
         </StellarBackground>

@@ -334,46 +334,50 @@ export default function DiaryDetailScreen() {
           )}
 
           {/* Chat transcript log */}
-          <View style={styles.transcriptHeader}>
-            <Text style={styles.sectionTitle}>原始聊天轨迹</Text>
-            <TouchableOpacity onPress={() => setShowTranscripts(!showTranscripts)}>
-              <Text style={styles.toggleText}>{showTranscripts ? "隐藏转文字" : "显示转文字"}</Text>
-            </TouchableOpacity>
-          </View>
+          {diary.messages && diary.messages.length > 0 && (
+            <>
+              <View style={styles.transcriptHeader}>
+                <Text style={styles.sectionTitle}>原始聊天轨迹</Text>
+                <TouchableOpacity onPress={() => setShowTranscripts(!showTranscripts)}>
+                  <Text style={styles.toggleText}>{showTranscripts ? "隐藏转文字" : "显示转文字"}</Text>
+                </TouchableOpacity>
+              </View>
 
-          <View style={styles.transcriptList}>
-            {diary.messages.map((msg) => {
-              const isAssistant = msg.role === "assistant";
-              const isVoice = msg.inputType === "voice" || msg.inputType === "ai_voice";
-              const isPlaying = activeVoiceId === msg.id;
+              <View style={styles.transcriptList}>
+                {diary.messages.map((msg) => {
+                  const isAssistant = msg.role === "assistant";
+                  const isVoice = msg.inputType === "voice" || msg.inputType === "ai_voice";
+                  const isPlaying = activeVoiceId === msg.id;
 
-              return (
-                <View key={msg.id} style={styles.transcriptItem}>
-                  <View style={styles.itemHeader}>
-                    <View style={styles.meta}>
-                      <Text style={styles.roleText}>{isAssistant ? "AI 语音" : "我的语音"}</Text>
+                  return (
+                    <View key={msg.id} style={styles.transcriptItem}>
+                      <View style={styles.itemHeader}>
+                        <View style={styles.meta}>
+                          <Text style={styles.roleText}>{isAssistant ? "AI 语音" : "我的语音"}</Text>
+                        </View>
+                        {isVoice ? (
+                          <TouchableOpacity
+                            style={[styles.playBtn, isPlaying && styles.playingBtn]}
+                            onPress={() => handlePlayVoice(msg)}
+                          >
+                            <Ionicons
+                              name={isPlaying ? "pause" : "play"}
+                              size={14}
+                              color="#faf6ef"
+                            />
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                      
+                      {showTranscripts && msg.transcript ? (
+                        <Text style={styles.transcriptBody}>{msg.transcript}</Text>
+                      ) : null}
                     </View>
-                    {isVoice ? (
-                      <TouchableOpacity
-                        style={[styles.playBtn, isPlaying && styles.playingBtn]}
-                        onPress={() => handlePlayVoice(msg)}
-                      >
-                        <Ionicons
-                          name={isPlaying ? "pause" : "play"}
-                          size={14}
-                          color="#faf6ef"
-                        />
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                  
-                  {showTranscripts && msg.transcript ? (
-                    <Text style={styles.transcriptBody}>{msg.transcript}</Text>
-                  ) : null}
-                </View>
-              );
-            })}
-          </View>
+                  );
+                })}
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -765,7 +769,9 @@ const getDynamicStyles = (theme: "stellar" | "kraft") => {
     },
     summaryText: {
       ...staticStyles.summaryText,
-      color: isStellar ? "rgba(255, 223, 169, 0.7)" : "#2c1810",
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+      backgroundColor: isStellar ? "rgba(7, 10, 24, 0.55)" : "#f5f0e8",
+      borderLeftColor: isStellar ? "#ffdfa9" : "#c6604a",
     },
     divider: {
       ...staticStyles.divider,

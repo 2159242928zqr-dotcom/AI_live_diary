@@ -5,11 +5,13 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  KeyboardAvoidingView,
   TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
-  Platform
+  Platform,
+  BackHandler
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Audio } from "expo-av";
@@ -67,6 +69,19 @@ export default function DiaryDetailScreen() {
     };
   }, [diaryId]);
 
+  // Intercept hardware back button on Android when editing
+  useEffect(() => {
+    const onBackPress = () => {
+      if (isEditing) {
+        handleBack();
+        return true;
+      }
+      return false;
+    };
+    const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => subscription.remove();
+  }, [isEditing, diary, editTitle, editSummary, editContent]);
+
   const handlePlayVoice = async (msg: LocalMessage) => {
     if (!msg.audioPath) return;
     try {
@@ -105,7 +120,7 @@ export default function DiaryDetailScreen() {
     }
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (showAlert = true) => {
     if (!diary) return;
     try {
       const updated: LocalDiary = {
@@ -117,7 +132,9 @@ export default function DiaryDetailScreen() {
       await saveDiary(updated);
       setDiary(updated);
       setIsEditing(false);
-      Alert.alert("保存成功", "日记内容已更新。");
+      if (showAlert) {
+        Alert.alert("保存成功", "日记内容已更新。");
+      }
     } catch (e) {
       Alert.alert("保存失败", "更新日记出错。");
     }
@@ -152,13 +169,39 @@ export default function DiaryDetailScreen() {
 
   const handleBack = () => {
     if (isEditing) {
-      // 退出编辑模式，撤销修改并还原文本
-      if (diary) {
-        setEditTitle(diary.title);
-        setEditSummary(diary.summary || "");
-        setEditContent(diary.content || "");
+      // 没有实际修改，直接退出编辑模式，留在详情页
+      const hasChanges =
+        editTitle !== (diary?.title || "") ||
+        editSummary !== (diary?.summary || "") ||
+        editContent !== (diary?.content || "");
+
+      if (!hasChanges) {
+        setIsEditing(false);
+        return;
       }
-      setIsEditing(false);
+
+      Alert.alert("保存修改", "你有未保存的修改，要保存吗？", [
+        { text: "取消", style: "cancel" },
+        {
+          text: "否",
+          style: "destructive",
+          onPress: () => {
+            setIsEditing(false);
+            // 还原编辑字段到原始值
+            if (diary) {
+              setEditTitle(diary.title);
+              setEditSummary(diary.summary || "");
+              setEditContent(diary.content || "");
+            }
+          },
+        },
+        {
+          text: "是",
+          onPress: async () => {
+            await handleSaveEdit(false);
+          },
+        },
+      ]);
     } else {
       // 正常退出：停止语音并返回上一页
       if (soundRef.current) {
@@ -262,7 +305,14 @@ export default function DiaryDetailScreen() {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
         {diary.imagePath ? (
           <View style={styles.imageCard}>
             <Image source={{ uri: diary.imagePath }} style={styles.diaryImage} />
@@ -380,6 +430,7 @@ export default function DiaryDetailScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 

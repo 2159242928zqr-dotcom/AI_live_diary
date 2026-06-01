@@ -55,6 +55,12 @@ export default function LoginPage() {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isSendingRegOtp, setIsSendingRegOtp] = useState(false);
 
+  // Password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+  const [showRecoveryConfirmPassword, setShowRecoveryConfirmPassword] = useState(false);
+
   // Recovery States (Forgot Password)
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState("");
@@ -628,30 +634,56 @@ export default function LoginPage() {
 
                       <View style={styles.field}>
                         <Text style={styles.label}>设置新密码</Text>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="至少 6 位新密码"
-                          placeholderTextColor={placeholderColor}
-                          value={recoveryPassword}
-                          onChangeText={setRecoveryPassword}
-                          secureTextEntry
-                          autoCapitalize="none"
-                          editable={!loading}
-                        />
+                        <View style={styles.passwordWrap}>
+                          <TextInput
+                            style={styles.passwordInput}
+                            placeholder="至少 6 位新密码"
+                            placeholderTextColor={placeholderColor}
+                            value={recoveryPassword}
+                            onChangeText={setRecoveryPassword}
+                            secureTextEntry={!showRecoveryPassword}
+                            autoCapitalize="none"
+                            editable={!loading}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeBtn}
+                            onPress={() => setShowRecoveryPassword(!showRecoveryPassword)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons
+                              name={showRecoveryPassword ? "eye-off-outline" : "eye-outline"}
+                              size={20}
+                              color={placeholderColor}
+                            />
+                          </TouchableOpacity>
+                        </View>
                       </View>
 
                       <View style={styles.field}>
                         <Text style={styles.label}>确认新密码</Text>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="再次输入新密码"
-                          placeholderTextColor={placeholderColor}
-                          value={recoveryConfirmPassword}
-                          onChangeText={setRecoveryConfirmPassword}
-                          secureTextEntry
-                          autoCapitalize="none"
-                          editable={!loading}
-                        />
+                        <View style={styles.passwordWrap}>
+                          <TextInput
+                            style={styles.passwordInput}
+                            placeholder="再次输入新密码"
+                            placeholderTextColor={placeholderColor}
+                            value={recoveryConfirmPassword}
+                            onChangeText={setRecoveryConfirmPassword}
+                            secureTextEntry={!showRecoveryConfirmPassword}
+                            autoCapitalize="none"
+                            editable={!loading}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeBtn}
+                            onPress={() => setShowRecoveryConfirmPassword(!showRecoveryConfirmPassword)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons
+                              name={showRecoveryConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                              size={20}
+                              color={placeholderColor}
+                            />
+                          </TouchableOpacity>
+                        </View>
                       </View>
 
                       <TouchableOpacity
@@ -844,16 +876,29 @@ export default function LoginPage() {
                                 <Text style={styles.forgotText}>忘记密码？</Text>
                               </TouchableOpacity>
                             </View>
-                            <TextInput
-                              style={styles.input}
-                              placeholder="至少 6 位"
-                              placeholderTextColor={placeholderColor}
-                              value={password}
-                              onChangeText={setPassword}
-                              secureTextEntry
-                              autoCapitalize="none"
-                              editable={!loading}
-                            />
+                            <View style={styles.passwordWrap}>
+                              <TextInput
+                                style={styles.passwordInput}
+                                placeholder="至少 6 位"
+                                placeholderTextColor={placeholderColor}
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry={!showPassword}
+                                autoCapitalize="none"
+                                editable={!loading}
+                              />
+                              <TouchableOpacity
+                                style={styles.eyeBtn}
+                                onPress={() => setShowPassword(!showPassword)}
+                                activeOpacity={0.7}
+                              >
+                                <Ionicons
+                                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                  size={20}
+                                  color={placeholderColor}
+                                />
+                              </TouchableOpacity>
+                            </View>
                           </View>
                         )}
 
@@ -877,30 +922,56 @@ export default function LoginPage() {
                           <>
                             <View style={styles.field}>
                               <Text style={styles.label}>设置密码</Text>
-                              <TextInput
-                                style={styles.input}
-                                placeholder="至少 6 位"
-                                placeholderTextColor={placeholderColor}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry
-                                autoCapitalize="none"
-                                editable={!loading}
-                              />
+                              <View style={styles.passwordWrap}>
+                                <TextInput
+                                  style={styles.passwordInput}
+                                  placeholder="至少 6 位"
+                                  placeholderTextColor={placeholderColor}
+                                  value={password}
+                                  onChangeText={setPassword}
+                                  secureTextEntry={!showPassword}
+                                  autoCapitalize="none"
+                                  editable={!loading}
+                                />
+                                <TouchableOpacity
+                                  style={styles.eyeBtn}
+                                  onPress={() => setShowPassword(!showPassword)}
+                                  activeOpacity={0.7}
+                                >
+                                  <Ionicons
+                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                    size={20}
+                                    color={placeholderColor}
+                                  />
+                                </TouchableOpacity>
+                              </View>
                             </View>
 
                             <View style={styles.field}>
                               <Text style={styles.label}>确认密码</Text>
-                              <TextInput
-                                style={styles.input}
-                                placeholder="再次输入密码"
-                                placeholderTextColor={placeholderColor}
-                                value={confirmPassword}
-                                onChangeText={setConfirmPassword}
-                                secureTextEntry
-                                autoCapitalize="none"
-                                editable={!loading}
-                              />
+                              <View style={styles.passwordWrap}>
+                                <TextInput
+                                  style={styles.passwordInput}
+                                  placeholder="再次输入密码"
+                                  placeholderTextColor={placeholderColor}
+                                  value={confirmPassword}
+                                  onChangeText={setConfirmPassword}
+                                  secureTextEntry={!showConfirmPassword}
+                                  autoCapitalize="none"
+                                  editable={!loading}
+                                />
+                                <TouchableOpacity
+                                  style={styles.eyeBtn}
+                                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                  activeOpacity={0.7}
+                                >
+                                  <Ionicons
+                                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                                    size={20}
+                                    color={placeholderColor}
+                                  />
+                                </TouchableOpacity>
+                              </View>
                             </View>
 
                             <View style={styles.field}>
@@ -1265,6 +1336,32 @@ const staticStyles = StyleSheet.create({
     fontSize: 14,
     color: "#f8fafc",
   },
+  passwordWrap: {
+    position: "relative",
+    width: "100%",
+    justifyContent: "center",
+  },
+  passwordInput: {
+    backgroundColor: "rgba(7, 10, 24, 0.6)",
+    borderColor: "rgba(255, 223, 169, 0.15)",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingRight: 48,
+    height: 46,
+    fontSize: 14,
+    color: "#f8fafc",
+  },
+  eyeBtn: {
+    position: "absolute",
+    right: 8,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    width: 40,
+    zIndex: 1,
+  },
   emailRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1602,6 +1699,12 @@ const getDynamicStyles = (theme: "stellar" | "kraft") => {
     },
     input: {
       ...staticStyles.input,
+      backgroundColor: isStellar ? "rgba(7, 10, 24, 0.6)" : "#ede4d5",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.15)" : "#d4c5a9",
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    passwordInput: {
+      ...staticStyles.passwordInput,
       backgroundColor: isStellar ? "rgba(7, 10, 24, 0.6)" : "#ede4d5",
       borderColor: isStellar ? "rgba(255, 223, 169, 0.15)" : "#d4c5a9",
       color: isStellar ? "#f8fafc" : "#2c1810",

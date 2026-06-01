@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { LocalMessage } from "@/lib/types";
 import { Ionicons } from "@expo/vector-icons";
 import { VoiceWave } from "./VoiceWave";
+import { useThemeStore } from "@/lib/tabState";
 
 interface MessageBubbleProps {
   message: LocalMessage;
@@ -13,13 +14,32 @@ interface MessageBubbleProps {
 export function MessageBubble({ message, onPlayVoice, isPlaying = false }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const isVoice = message.inputType === "voice" || message.inputType === "ai_voice";
+  const { theme } = useThemeStore();
+  const isStellar = theme === "stellar";
+
+  // Dynamic values
+  const bubbleStyles = isStellar 
+    ? (isUser 
+        ? { backgroundColor: "rgba(255, 223, 169, 0.08)", borderColor: "rgba(255, 223, 169, 0.25)" }
+        : { backgroundColor: "rgba(139, 92, 246, 0.06)", borderColor: "rgba(139, 92, 246, 0.18)" })
+    : (isUser ? styles.userBubble : styles.assistantBubble);
+
+  const textStyle = isStellar
+    ? (isUser ? { color: "#ffdfa9" } : { color: "#a78bfa" })
+    : (isUser ? styles.userText : styles.assistantText);
+
+  const voiceBtnStyle = isStellar
+    ? { backgroundColor: isUser ? "rgba(255, 223, 169, 0.15)" : "rgba(139, 92, 246, 0.15)", borderWidth: 1, borderColor: isUser ? "rgba(255, 223, 169, 0.3)" : "rgba(139, 92, 246, 0.3)" }
+    : styles.voiceButton;
+
+  const timeColor = isStellar ? "rgba(255, 223, 169, 0.4)" : "#8b7355";
 
   return (
     <View style={[styles.wrapper, isUser ? styles.userWrapper : styles.assistantWrapper]}>
       <View
         style={[
           styles.bubble,
-          isUser ? styles.userBubble : styles.assistantBubble,
+          bubbleStyles,
           isVoice && styles.voiceBubble,
         ]}
       >
@@ -29,27 +49,27 @@ export function MessageBubble({ message, onPlayVoice, isPlaying = false }: Messa
             onPress={() => onPlayVoice?.(message)}
             activeOpacity={0.7}
           >
-            <VoiceWave active={isPlaying} color={isUser ? "#2c1810" : "#c6604a"} count={5} />
-            <View style={styles.voiceButton}>
+            <VoiceWave active={isPlaying} color={isStellar ? (isUser ? "#ffdfa9" : "#a78bfa") : (isUser ? "#2c1810" : "#c6604a")} count={5} />
+            <View style={[styles.voiceButton, voiceBtnStyle]}>
               <Ionicons
                 name={isPlaying ? "pause" : "play"}
                 size={18}
-                color={isUser ? "#faf6ef" : "#faf6ef"}
+                color={isStellar ? (isUser ? "#ffdfa9" : "#a78bfa") : "#faf6ef"}
               />
             </View>
             {message.transcript && (
-              <Text style={[styles.transcriptText, isUser ? styles.userText : styles.assistantText]}>
+              <Text style={[styles.transcriptText, textStyle]}>
                 {message.transcript}
               </Text>
             )}
           </TouchableOpacity>
         ) : (
-          <Text style={[styles.text, isUser ? styles.userText : styles.assistantText]}>
+          <Text style={[styles.text, textStyle]}>
             {message.text}
           </Text>
         )}
       </View>
-      <Text style={styles.timeText}>
+      <Text style={[styles.timeText, { color: timeColor }]}>
         {new Date(message.createdAt).toLocaleTimeString("zh-CN", {
           hour: "2-digit",
           minute: "2-digit",
@@ -127,7 +147,6 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 10,
-    color: "#8b7355", // Coffee brown
     marginTop: 3,
     marginHorizontal: 4,
   },

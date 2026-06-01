@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initStorage } from "@/lib/storage";
+import { useThemeStore } from "@/lib/tabState";
 
 function RootLayoutContent() {
   const { user, loading } = useAuth();
@@ -11,7 +12,9 @@ function RootLayoutContent() {
 
   // Initialize storage once
   useEffect(() => {
-    initStorage().catch(console.error);
+    initStorage()
+      .then(() => useThemeStore.getState().loadTheme())
+      .catch(console.error);
   }, []);
 
   // Monitor auth status and redirect

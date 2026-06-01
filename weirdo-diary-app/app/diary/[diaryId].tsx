@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Audio } from "expo-av";
@@ -18,10 +19,15 @@ import { formatDateLabel } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
 import { shareDiaryZip } from "@/lib/export";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useThemeStore } from "@/lib/tabState";
+import { StellarBackground } from "@/components/StellarBackground";
 
 export default function DiaryDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme } = useThemeStore();
+  const styles = getDynamicStyles(theme);
+  const isStellar = theme === "stellar";
   const { diaryId } = useLocalSearchParams<{ diaryId: string }>();
   const [diary, setDiary] = useState<LocalDiary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,8 +190,8 @@ export default function DiaryDetailScreen() {
     );
   }
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+  const renderDetailContent = () => (
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isStellar ? "transparent" : "#f5f0e8" }]}>
       {/* 菜单背景点击遮罩：点击其他区域直接关闭菜单 */}
       {showMenu && (
         <TouchableOpacity
@@ -372,9 +378,20 @@ export default function DiaryDetailScreen() {
       </ScrollView>
     </View>
   );
+
+  if (isStellar) {
+    return (
+      <View style={{ flex: 1 }}>
+        <StellarBackground>
+          {renderDetailContent()}
+        </StellarBackground>
+      </View>
+    );
+  }
+  return renderDetailContent();
 }
 
-const styles = StyleSheet.create({
+const staticStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f0e8",
@@ -693,3 +710,109 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
 });
+
+const getDynamicStyles = (theme: "stellar" | "kraft") => {
+  const isStellar = theme === "stellar";
+  return {
+    ...staticStyles,
+    container: {
+      ...staticStyles.container,
+      backgroundColor: isStellar ? "transparent" : "#f5f0e8",
+    },
+    header: {
+      ...staticStyles.header,
+      borderBottomColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+      borderBottomWidth: isStellar ? 0.5 : 1,
+    },
+    backButton: {
+      ...staticStyles.backButton,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.12)" : "#d4c5a9",
+    },
+    headerTitle: {
+      ...staticStyles.headerTitle,
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+      fontFamily: isStellar ? (Platform.OS === "ios" ? "Georgia" : "serif") : "System",
+    },
+    shareButton: {
+      ...staticStyles.shareButton,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.12)" : "#d4c5a9",
+    },
+    notebookPage: {
+      ...staticStyles.notebookPage,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.8)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+      borderRadius: isStellar ? 24 : 16,
+      shadowColor: isStellar ? "#000" : "#2c1810",
+    },
+    titleText: {
+      ...staticStyles.titleText,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+      fontFamily: isStellar ? (Platform.OS === "ios" ? "Georgia" : "serif") : "System",
+    },
+    dateText: {
+      ...staticStyles.dateText,
+      color: isStellar ? "#ffdf9f" : "#8b7355",
+    },
+    tag: {
+      ...staticStyles.tag,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+    },
+    tagText: {
+      ...staticStyles.tagText,
+      color: isStellar ? "#ffdfa9" : "#8b7355",
+    },
+    summaryText: {
+      ...staticStyles.summaryText,
+      color: isStellar ? "rgba(255, 223, 169, 0.7)" : "#2c1810",
+    },
+    divider: {
+      ...staticStyles.divider,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+    },
+    sectionTitle: {
+      ...staticStyles.sectionTitle,
+      color: isStellar ? "rgba(255, 223, 169, 0.6)" : "#8b7355",
+    },
+    contentText: {
+      ...staticStyles.contentText,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    transcriptItem: {
+      ...staticStyles.transcriptItem,
+      backgroundColor: isStellar ? "rgba(7, 10, 24, 0.4)" : "#f5f0e8",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.1)" : "#ede4d5",
+    },
+    roleText: {
+      ...staticStyles.roleText,
+      color: isStellar ? "#ffdf9f" : "#8b7355",
+    },
+    transcriptBody: {
+      ...staticStyles.transcriptBody,
+      color: isStellar ? "rgba(255, 223, 169, 0.65)" : "#8b7355",
+    },
+    playBtn: {
+      ...staticStyles.playBtn,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.15)" : "#4a7c6b",
+    },
+    playingBtn: {
+      ...staticStyles.playingBtn,
+      backgroundColor: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    menuDropdown: {
+      ...staticStyles.menuDropdown,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.95)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.2)" : "#d4c5a9",
+      shadowColor: isStellar ? "#000" : "#2c1810",
+    },
+    menuItemText: {
+      ...staticStyles.menuItemText,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    menuDivider: {
+      ...staticStyles.menuDivider,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+    },
+  };
+};

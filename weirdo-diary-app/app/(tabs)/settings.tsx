@@ -10,7 +10,8 @@ import {
   TextInput,
   Image,
   Modal,
-  Clipboard
+  Clipboard,
+  Platform
 } from "react-native";
 import { useAuth } from "@/lib/auth";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,11 +29,15 @@ import { exportAllDiariesAsZip } from "@/lib/export";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "@/lib/supabase";
+import { useThemeStore } from "@/lib/tabState";
 import { getApiConfig, saveApiConfig, apiPost } from "@/lib/api";
+import { StellarBackground } from "@/components/StellarBackground";
 
 
 export default function SettingsScreen() {
   const { user, logout, login } = useAuth();
+  const { theme, setTheme } = useThemeStore();
+  const styles = getDynamicStyles(theme);
   const [exporting, setExporting] = useState(false);
   const [eventTags, setEventTags] = useState<string[]>(["旅游", "看电影", "聚会", "工作", "散步", "独处"]);
   const [moodTags, setMoodTags] = useState<string[]>(["开心", "高兴", "平静", "疲惫", "期待", "难过"]);
@@ -746,8 +751,10 @@ export default function SettingsScreen() {
   const editGradientIndex = isEditGradient ? parseInt(editAvatarUrl.split(":")[1], 10) : 0;
   const editGradientColor = gradients[editGradientIndex] || gradients[0];
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+  const isStellar = theme === "stellar";
+
+  const renderContent = () => (
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isStellar ? "transparent" : "#f5f0e8" }]}>
       <View style={styles.header}>
         {activeSection !== null && (
           <TouchableOpacity
@@ -970,7 +977,41 @@ export default function SettingsScreen() {
                     <Ionicons name="chevron-forward" size={16} color="#c6604a" />
                   </TouchableOpacity>
                 </View>
- 
+
+                {/* Theme Selector Row */}
+                <View style={styles.themeSelectorContainer}>
+                  <Text style={styles.themeLabel}>手账空间主题</Text>
+                  <View style={styles.themeButtonRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.themeSelectBtn,
+                        theme === "kraft" ? styles.activeThemeBtnKraft : styles.inactiveThemeBtn
+                      ]}
+                      onPress={() => setTheme("kraft")}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="journal-outline" size={14} color={theme === "kraft" ? "#faf6ef" : "#8b7355"} />
+                      <Text style={[styles.themeBtnText, theme === "kraft" ? styles.activeThemeTextKraft : styles.inactiveThemeText]}>
+                        羊皮纸
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.themeSelectBtn,
+                        theme === "stellar" ? styles.activeThemeBtnStellar : styles.inactiveThemeBtn
+                      ]}
+                      onPress={() => setTheme("stellar")}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="sparkles-outline" size={14} color={theme === "stellar" ? "#ffdfa9" : "#8b7355"} />
+                      <Text style={[styles.themeBtnText, theme === "stellar" ? styles.activeThemeTextStellar : styles.inactiveThemeText]}>
+                        星夜
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 {/* Actions Row */}
                 <View style={[styles.profileActionRow, { marginTop: 12 }]}>
                   <TouchableOpacity
@@ -1785,9 +1826,14 @@ export default function SettingsScreen() {
       </Modal>
     </View>
   );
+
+  if (isStellar) {
+    return <StellarBackground>{renderContent()}</StellarBackground>;
+  }
+  return renderContent();
 }
 
-const styles = StyleSheet.create({
+const staticStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f0e8",
@@ -2568,5 +2614,166 @@ const styles = StyleSheet.create({
   alertButtonTextDestructive: {
     color: "#faf6ef",
   },
+  themeSelectorContainer: {
+    marginVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#ede4d5",
+    paddingTop: 12,
+    gap: 8,
+  },
+  themeLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#8b7355",
+    paddingLeft: 4,
+  },
+  themeButtonRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  themeSelectBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1.2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  inactiveThemeBtn: {
+    backgroundColor: "#ede4d5",
+    borderColor: "#d4c5a9",
+  },
+  activeThemeBtnKraft: {
+    backgroundColor: "#c6604a",
+    borderColor: "#c6604a",
+  },
+  activeThemeBtnStellar: {
+    backgroundColor: "rgba(255, 223, 169, 0.18)",
+    borderColor: "rgba(255, 223, 169, 0.45)",
+  },
+  themeBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  inactiveThemeText: {
+    color: "#8b7355",
+  },
+  activeThemeTextKraft: {
+    color: "#faf6ef",
+  },
+  activeThemeTextStellar: {
+    color: "#ffdfa9",
+  },
 });
+
+const getDynamicStyles = (theme: "stellar" | "kraft") => {
+  const isStellar = theme === "stellar";
+  return {
+    ...staticStyles,
+    container: {
+      ...staticStyles.container,
+      backgroundColor: isStellar ? "transparent" : "#f5f0e8",
+    },
+    header: {
+      ...staticStyles.header,
+      borderBottomColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+    },
+    appTitle: {
+      ...staticStyles.appTitle,
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+      fontFamily: isStellar ? (Platform.OS === "ios" ? "Georgia" : "serif") : "System",
+    },
+    tagline: {
+      ...staticStyles.tagline,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    sectionHeader: {
+      ...staticStyles.sectionHeader,
+      color: isStellar ? "rgba(255, 223, 169, 0.6)" : "#8b7355",
+    },
+    accountCard: {
+      ...staticStyles.accountCard,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.8)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+      borderRadius: isStellar ? 16 : 14,
+    },
+    emailText: {
+      ...staticStyles.emailText,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    inviteText: {
+      ...staticStyles.inviteText,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    copyHint: {
+      ...staticStyles.copyHint,
+      color: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    inputLabel: {
+      ...staticStyles.inputLabel,
+      color: isStellar ? "rgba(255, 223, 169, 0.6)" : "#8b7355",
+    },
+    textInput: {
+      ...staticStyles.textInput,
+      backgroundColor: isStellar ? "rgba(7, 10, 24, 0.6)" : "#ede4d5",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.15)" : "#d4c5a9",
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    menuItem: {
+      ...staticStyles.menuItem,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.8)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+      borderRadius: isStellar ? 16 : 12,
+    },
+    menuItemTitle: {
+      ...staticStyles.menuItemTitle,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    menuItemSubtitle: {
+      ...staticStyles.menuItemSubtitle,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    backHeaderButton: {
+      ...staticStyles.backHeaderButton,
+      ...(isStellar ? {
+        backgroundColor: "rgba(255, 223, 169, 0.08)",
+        borderColor: "rgba(255, 223, 169, 0.12)",
+        borderWidth: 1,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 18,
+      } : {}),
+    },
+    backHeaderText: {
+      ...staticStyles.backHeaderText,
+      color: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    subOptionTab: {
+      ...staticStyles.subOptionTab,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.8)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+    },
+    subOptionTitle: {
+      ...staticStyles.subOptionTitle,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    alertContainer: {
+      ...staticStyles.alertContainer,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.95)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.25)" : "#d4c5a9",
+      borderWidth: 1.5,
+    },
+    alertTitle: {
+      ...staticStyles.alertTitle,
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+    },
+    alertMessage: {
+      ...staticStyles.alertMessage,
+      color: isStellar ? "rgba(255, 223, 169, 0.75)" : "#8b7355",
+    },
+  };
+};
 

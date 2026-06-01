@@ -5,7 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image
+  Image,
+  Platform
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { loadAllDiaries } from "@/lib/storage";
@@ -13,6 +14,8 @@ import { LocalDiary } from "@/lib/types";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDateLabel } from "@/lib/utils";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useThemeStore } from "@/lib/tabState";
+import { StellarBackground } from "@/components/StellarBackground";
 
 function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -31,6 +34,10 @@ function getCalendarCells(cursor: Date) {
 
 export default function CalendarScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { theme } = useThemeStore();
+  const styles = getDynamicStyles(theme);
+  const isStellar = theme === "stellar";
   const [cursor, setCursor] = useState(() => new Date());
   const [diaries, setDiaries] = useState<LocalDiary[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -85,10 +92,8 @@ export default function CalendarScreen() {
     setCursor((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
   }
 
-  const insets = useSafeAreaInsets();
-
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+  const renderCalendarContent = () => (
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isStellar ? "transparent" : "#f5f0e8" }]}>
       <View style={styles.header}>
         <Text style={styles.appTitle}>记忆日历</Text>
         <Text style={styles.tagline}>在时间中探寻足迹</Text>
@@ -207,7 +212,7 @@ export default function CalendarScreen() {
             ))
           ) : (
             <View style={styles.emptyContainer}>
-              <Ionicons name="cafe-outline" size={36} color="#d4c5a9" />
+              <Ionicons name="cafe-outline" size={36} color={isStellar ? "rgba(255, 223, 169, 0.5)" : "#d4c5a9"} />
               <Text style={styles.emptyText}>今天空空如也呢，还没有留下回忆</Text>
             </View>
           )}
@@ -215,9 +220,20 @@ export default function CalendarScreen() {
       </ScrollView>
     </View>
   );
+
+  if (isStellar) {
+    return (
+      <View style={{ flex: 1 }}>
+        <StellarBackground>
+          {renderCalendarContent()}
+        </StellarBackground>
+      </View>
+    );
+  }
+  return renderCalendarContent();
 }
 
-const styles = StyleSheet.create({
+const staticStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f0e8",
@@ -414,3 +430,106 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
+
+const getDynamicStyles = (theme: "stellar" | "kraft") => {
+  const isStellar = theme === "stellar";
+  return {
+    ...staticStyles,
+    header: {
+      ...staticStyles.header,
+      borderBottomColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+      borderBottomWidth: isStellar ? 0.5 : 1,
+    },
+    appTitle: {
+      ...staticStyles.appTitle,
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+      fontFamily: isStellar ? (Platform.OS === "ios" ? "Georgia" : "serif") : "System",
+      fontSize: isStellar ? 22 : 24,
+    },
+    tagline: {
+      ...staticStyles.tagline,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+      fontSize: isStellar ? 10 : 11,
+    },
+    calendarCard: {
+      ...staticStyles.calendarCard,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.8)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+      borderRadius: isStellar ? 24 : 16,
+    },
+    monthTitle: {
+      ...staticStyles.monthTitle,
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+    },
+    weekdayText: {
+      ...staticStyles.weekdayText,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    cell: {
+      ...staticStyles.cell,
+    },
+    cellSelected: {
+      ...staticStyles.cellSelected,
+      backgroundColor: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    cellWithDiary: {
+      ...staticStyles.cellWithDiary,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.1)" : "#ede4d5",
+    },
+    cellText: {
+      ...staticStyles.cellText,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    cellTextSelected: {
+      ...staticStyles.cellTextSelected,
+      color: isStellar ? "#0c1324" : "#faf6ef",
+    },
+    cellTextToday: {
+      ...staticStyles.cellTextToday,
+      color: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    dotActive: {
+      ...staticStyles.dotActive,
+      backgroundColor: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    dotSelected: {
+      ...staticStyles.dotSelected,
+      backgroundColor: isStellar ? "#0c1324" : "#faf6ef",
+    },
+    sectionHeader: {
+      ...staticStyles.sectionHeader,
+      color: isStellar ? "rgba(255, 223, 169, 0.6)" : "#8b7355",
+    },
+    diaryCard: {
+      ...staticStyles.diaryCard,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.8)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+      borderRadius: isStellar ? 16 : 12,
+    },
+    diaryTitle: {
+      ...staticStyles.diaryTitle,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    diarySummary: {
+      ...staticStyles.diarySummary,
+      color: isStellar ? "rgba(255, 223, 169, 0.6)" : "#8b7355",
+    },
+    tag: {
+      ...staticStyles.tag,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#e8ddd0",
+    },
+    tagText: {
+      ...staticStyles.tagText,
+      color: isStellar ? "#ffdfa9" : "#8b7355",
+    },
+    emptyContainer: {
+      ...staticStyles.emptyContainer,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.8)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+    },
+    emptyText: {
+      ...staticStyles.emptyText,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+  };
+};

@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from "react-native";
 import { LocalDiary } from "@/lib/types";
 import { formatDateLabel } from "@/lib/utils";
+import { useThemeStore } from "@/lib/tabState";
 
 interface DiaryCardProps {
   diary: LocalDiary;
@@ -10,10 +11,13 @@ interface DiaryCardProps {
 
 export function DiaryCard({ diary, onPress }: DiaryCardProps) {
   const hasTags = diary.eventTag || diary.moodTag;
+  const { theme } = useThemeStore();
+  const styles = getDynamicStyles(theme);
+  const isStellar = theme === "stellar";
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>
-      {/* 笔记本左侧线圈效果 */}
+      {/* 笔记本左侧线圈效果 - 升级为流光连接线 (Stellar Binder) */}
       <View style={styles.binderContainer}>
         <View style={styles.binderRing} />
         <View style={styles.binderRing} />
@@ -25,7 +29,10 @@ export function DiaryCard({ diary, onPress }: DiaryCardProps) {
       <View style={styles.cardRow}>
         {/* 左侧：日记图片 */}
         {diary.imagePath ? (
-          <Image source={{ uri: diary.imagePath }} style={styles.thumbnailImage} />
+          <View style={styles.thumbnailFrame}>
+            <Image source={{ uri: diary.imagePath }} style={styles.thumbnailImage} />
+            <View style={styles.thumbnailGlassRim} />
+          </View>
         ) : (
           <View style={styles.thumbnailPlaceholder}>
             <Text style={styles.placeholderText}>日记图片</Text>
@@ -47,14 +54,14 @@ export function DiaryCard({ diary, onPress }: DiaryCardProps) {
           
           {/* 标签行 */}
           {hasTags ? (
-            <View style={[styles.tagRow, { marginBottom: 6 }]}>
+            <View style={[styles.tagRow, { marginBottom: 8 }]}>
               {diary.eventTag ? (
-                <View style={[styles.tag, { flexDirection: "row", alignItems: "center" }]}>
+                <View style={styles.tag}>
                   <Text style={styles.tagText}>{diary.eventTag + "  "}</Text>
                 </View>
               ) : null}
               {diary.moodTag ? (
-                <View style={[styles.tag, { flexDirection: "row", alignItems: "center" }]}>
+                <View style={styles.tag}>
                   <Text style={styles.tagText}>{diary.moodTag + "  "}</Text>
                 </View>
               ) : null}
@@ -71,19 +78,19 @@ export function DiaryCard({ diary, onPress }: DiaryCardProps) {
   );
 }
  
-const styles = StyleSheet.create({
+const staticStyles = StyleSheet.create({
   card: {
-    backgroundColor: "#faf6ef", // 纸张暖白卡片
-    borderRadius: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.04)", // 玻璃卡片底板
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#d4c5a9", // 纸面边框
+    borderColor: "rgba(255, 223, 169, 0.15)", // 微弱金色高光描边
     marginVertical: 8,
     marginHorizontal: 16,
     overflow: "hidden",
-    shadowColor: "#2c1810", // 咖啡色柔和阴影
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
     elevation: 3,
     position: "relative",
     padding: 12,
@@ -91,8 +98,8 @@ const styles = StyleSheet.create({
   },
   binderContainer: {
     position: "absolute",
-    top: 12,
-    bottom: 12,
+    top: 14,
+    bottom: 14,
     left: 8,
     justifyContent: "space-between",
     alignItems: "center",
@@ -103,32 +110,55 @@ const styles = StyleSheet.create({
     width: 12,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#8b7355", // 线圈咖啡色
-    opacity: 0.35,
+    backgroundColor: "rgba(255, 223, 169, 0.25)", // 金色/紫铜色星云连接线
+    borderWidth: 0.8,
+    borderColor: "rgba(255, 223, 169, 0.4)",
     marginLeft: -4,
+    shadowColor: "#ffdfa9",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 3,
   },
   cardRow: {
     flexDirection: "row",
     alignItems: "center",
   },
-  thumbnailImage: {
+  thumbnailFrame: {
     width: 80,
     height: 80,
+    borderRadius: 12,
+    padding: 2.5,
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 223, 169, 0.18)",
+    position: "relative",
+  },
+  thumbnailImage: {
+    width: "100%",
+    height: "100%",
     borderRadius: 10,
     resizeMode: "cover",
-    backgroundColor: "#ede4d5",
+    backgroundColor: "rgba(7, 10, 24, 0.4)",
+  },
+  thumbnailGlassRim: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 12,
+    borderWidth: 0.8,
+    borderColor: "rgba(255, 255, 255, 0.05)",
   },
   thumbnailPlaceholder: {
     width: 80,
     height: 80,
-    borderRadius: 10,
-    backgroundColor: "#ede4d5",
+    borderRadius: 12,
+    backgroundColor: "rgba(7, 10, 24, 0.4)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 223, 169, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
   placeholderText: {
-    fontSize: 11,
-    color: "#8b7355",
+    fontSize: 10,
+    color: "rgba(255, 223, 169, 0.4)",
     fontWeight: "600",
   },
   infoArea: {
@@ -142,33 +172,26 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  titleAndTags: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flex: 1,
-    marginRight: 12, // 留出充足间距，防止右侧时间被挤压
-  },
   titleText: {
-    fontSize: 16,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontSize: 15,
     fontWeight: "700",
-    color: "#2c1810", // 深咖啡色
-    fontFamily: "System",
-    flex: 1, // 占用剩余空间，让标签优先完整显示并防止挤压
-    marginRight: 12, // 留出充足间距，防止右侧时间被挤压
+    color: "#f8fafc", // Off-white
+    flex: 1,
+    marginRight: 10,
   },
   tagRow: {
     flexDirection: "row",
-    gap: 4,
-    flexShrink: 0, // 标签始终完整显示，不允许被收缩挤压
+    gap: 6,
+    flexShrink: 0,
   },
   tag: {
-    backgroundColor: "#e8ddd0", 
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: "rgba(255, 223, 169, 0.08)", // 玻璃卡片小标签
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 8,
-    borderWidth: 0.5,
-    borderColor: "#d4c5a9",
+    borderWidth: 0.8,
+    borderColor: "rgba(255, 223, 169, 0.2)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -176,20 +199,104 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 9,
-    color: "#8b7355",
-    fontWeight: "600",
+    color: "#ffdfa9", // 金色
+    fontWeight: "700",
     flexShrink: 0,
   },
   dateText: {
     fontSize: 11,
-    color: "#8b7355", 
+    color: "#ffdf9f", 
     fontWeight: "600",
-    flexShrink: 0, // 时间（如“周六”等字符）绝对不允许被收缩遮挡
+    flexShrink: 0,
   },
   summaryText: {
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 18,
-    color: "#2c1810",
-    opacity: 0.75,
+    color: "rgba(255, 223, 169, 0.6)", // 较轻淡金色半透文字
   },
 });
+
+const getDynamicStyles = (theme: "stellar" | "kraft") => {
+  const isStellar = theme === "stellar";
+  return {
+    ...staticStyles,
+    card: {
+      ...staticStyles.card,
+      backgroundColor: isStellar ? "rgba(255, 255, 255, 0.04)" : "#faf6ef",
+      borderRadius: isStellar ? 16 : 14,
+      borderWidth: 1,
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.15)" : "#d4c5a9",
+      shadowColor: isStellar ? "#000" : "#2c1810",
+      shadowOffset: isStellar ? { width: 0, height: 4 } : { width: 0, height: 2 },
+      shadowOpacity: isStellar ? 0.2 : 0.08,
+      shadowRadius: isStellar ? 8 : 6,
+    },
+    binderRing: {
+      ...staticStyles.binderRing,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.25)" : "#8b7355",
+      borderWidth: isStellar ? 0.8 : 0,
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.4)" : "transparent",
+      opacity: isStellar ? 1 : 0.35,
+      shadowColor: isStellar ? "#ffdfa9" : "transparent",
+      shadowOpacity: isStellar ? 0.6 : 0,
+      shadowRadius: isStellar ? 3 : 0,
+    },
+    thumbnailFrame: {
+      ...staticStyles.thumbnailFrame,
+      backgroundColor: isStellar ? "rgba(255, 255, 255, 0.03)" : "#faf6ef",
+      borderWidth: isStellar ? 1 : 0,
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "transparent",
+      borderRadius: isStellar ? 12 : 10,
+      padding: isStellar ? 2.5 : 0,
+    },
+    thumbnailImage: {
+      ...staticStyles.thumbnailImage,
+      backgroundColor: isStellar ? "rgba(7, 10, 24, 0.4)" : "#ede4d5",
+      borderRadius: isStellar ? 10 : 8,
+    },
+    thumbnailGlassRim: {
+      ...staticStyles.thumbnailGlassRim,
+      display: (isStellar ? "flex" : "none") as any,
+    },
+    thumbnailPlaceholder: {
+      ...staticStyles.thumbnailPlaceholder,
+      backgroundColor: isStellar ? "rgba(7, 10, 24, 0.4)" : "#ede4d5",
+      borderWidth: isStellar ? 1 : 0,
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.12)" : "transparent",
+      borderRadius: isStellar ? 12 : 10,
+    },
+    placeholderText: {
+      ...staticStyles.placeholderText,
+      color: isStellar ? "rgba(255, 223, 169, 0.4)" : "#8b7355",
+      fontSize: isStellar ? 10 : 11,
+    },
+    titleText: {
+      ...staticStyles.titleText,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+      fontFamily: isStellar ? (Platform.OS === "ios" ? "Georgia" : "serif") : "System",
+      fontSize: isStellar ? 15 : 16,
+    },
+    tag: {
+      ...staticStyles.tag,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#e8ddd0",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.2)" : "#d4c5a9",
+      borderWidth: isStellar ? 0.8 : 0.5,
+      borderRadius: 8,
+    },
+    tagText: {
+      ...staticStyles.tagText,
+      color: isStellar ? "#ffdfa9" : "#8b7355",
+      fontWeight: (isStellar ? "700" : "600") as any,
+    },
+    dateText: {
+      ...staticStyles.dateText,
+      color: isStellar ? "#ffdf9f" : "#8b7355",
+    },
+    summaryText: {
+      ...staticStyles.summaryText,
+      color: isStellar ? "rgba(255, 223, 169, 0.6)" : "#2c1810",
+      opacity: isStellar ? 1 : 0.75,
+      fontSize: isStellar ? 12 : 13,
+    },
+  };
+};

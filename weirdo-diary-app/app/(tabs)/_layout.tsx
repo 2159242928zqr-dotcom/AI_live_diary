@@ -1,25 +1,27 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useTabStore } from "@/lib/tabState";
+import { useTabStore, useThemeStore } from "@/lib/tabState";
 
 export default function TabsLayout() {
   const { showDashboard } = useTabStore();
+  const { theme } = useThemeStore();
+  const isStellar = theme === "stellar";
 
   return (
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#faf6ef", // card background
-          borderTopColor: "#d4c5a9", // vintage border
+          backgroundColor: isStellar ? "#070a18" : "#faf6ef", 
+          borderTopColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#d4c5a9", 
           borderTopWidth: 1,
           height: 72,
           paddingBottom: 18,
           paddingTop: 8,
           display: !showDashboard ? "none" : "flex",
         },
-        tabBarActiveTintColor: "#c6604a", // Clay Red
-        tabBarInactiveTintColor: "#8b7355", // Coffee Brown
+        tabBarActiveTintColor: isStellar ? "#ffdfa9" : "#c6604a", 
+        tabBarInactiveTintColor: isStellar ? "rgba(255, 223, 169, 0.4)" : "#8b7355", 
         tabBarLabelStyle: {
           fontFamily: "System",
           fontSize: 12,

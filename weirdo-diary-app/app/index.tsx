@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,10 @@ import {
   Image,
   ActivityIndicator,
   Modal,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
   Alert as RNAlert
 } from "react-native";
 import { useAuth } from "@/lib/auth";
@@ -17,12 +21,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { getSavedAccounts, saveAccountToList, removeAccountFromList, type SavedAccount } from "@/lib/storage";
 import { apiPost } from "@/lib/api";
+import { StellarBackground } from "@/components/StellarBackground";
+import { useThemeStore } from "@/lib/tabState";
+
+const { width, height } = Dimensions.get("window");
 
 type AuthMode = "login" | "register";
 type LoginSubMode = "password" | "otp";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { theme } = useThemeStore();
+  const styles = getDynamicStyles(theme);
+  const isStellar = theme === "stellar";
   const [mode, setMode] = useState<AuthMode>("login");
   const [loginSubMode, setLoginSubMode] = useState<LoginSubMode>("password");
   
@@ -53,7 +64,11 @@ export default function LoginPage() {
   const [recoveryCountdown, setRecoveryCountdown] = useState(0);
   const [isSendingRecoveryOtp, setIsSendingRecoveryOtp] = useState(false);
 
-  // Premium kraft-paper custom alert state & helper
+  // --- NEW: Stellar Theme Onboarding States & Animated Values ---
+  const [showAuthPanel, setShowAuthPanel] = useState(false);
+  const onboardingAnim = useRef(new Animated.Value(0)).current; // 0 for welcome, 1 for auth form sliding in
+
+  // Premium glassmorphic custom alert state & helper
   const [customAlert, setCustomAlert] = useState<{
     visible: boolean;
     title: string;
@@ -133,6 +148,27 @@ export default function LoginPage() {
     };
   }, [recoveryCountdown]);
 
+  // Handle slide animations for Onboarding -> Auth Form
+  const triggerTransitionToAuth = (open: boolean) => {
+    if (open) {
+      setShowAuthPanel(true);
+      Animated.spring(onboardingAnim, {
+        toValue: 1,
+        friction: 6,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(onboardingAnim, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowAuthPanel(false);
+      });
+    }
+  };
+
   // Error translating helper
   const translateError = (error: any): string => {
     const msg = error instanceof Error ? error.message : String(error);
@@ -161,7 +197,6 @@ export default function LoginPage() {
   const handleLoginWithSaved = async (account: SavedAccount) => {
     setLoading(true);
     try {
-      // If the account has no password (e.g. logged in via OTP), fill email and switch to Password mode for manual entry
       if (!account.password) {
         setEmail(account.email);
         setPassword("");
@@ -172,8 +207,6 @@ export default function LoginPage() {
         return;
       }
 
-
-      // Direct sign in using supabase client to get immediate response & user object
       const { data, error } = await supabase.auth.signInWithPassword({
         email: account.email,
         password: account.password
@@ -195,7 +228,6 @@ export default function LoginPage() {
         inviteCode: account.inviteCode || `gk-${user.id.slice(0, 6).toUpperCase()}`
       });
 
-      // Redirection is handled automatically by the _layout listener
     } catch (error) {
       Alert.alert("自动登录失败", translateError(error));
       setEmail(account.email);
@@ -234,7 +266,7 @@ export default function LoginPage() {
     }
   };
 
-  // Send Register OTP (triggers signUp behind the scenes)
+  // Send Register OTP (signUp behind the scenes)
   const handleSendRegOtp = async () => {
     if (!qqEmailIsValid(email)) {
       Alert.alert("邮箱格式错误", "请输入合法的 QQ 邮箱，如 123456@qq.com");
@@ -246,7 +278,6 @@ export default function LoginPage() {
     }
     setIsSendingRegOtp(true);
     try {
-      // signUp will trigger Supabase to send OTP / email confirmation
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password: password
@@ -254,7 +285,6 @@ export default function LoginPage() {
       if (error) throw error;
       if (!data.user) throw new Error("发送验证码失败");
 
-      // Handle preventable user enumeration cases
       if (data.user.identities && data.user.identities.length === 0) {
         throw new Error("User already exists");
       }
@@ -308,7 +338,6 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      // 1. Verify Recovery OTP
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email: recoveryEmail.trim(),
         token: recoveryOtpToken.trim(),
@@ -316,13 +345,11 @@ export default function LoginPage() {
       });
       if (verifyError) throw verifyError;
 
-      // 2. Set new password on cloud
       const { error: updateError } = await supabase.auth.updateUser({
         password: recoveryPassword
       });
       if (updateError) throw updateError;
 
-      // 3. Save locally
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const userMetadata = user.user_metadata;
@@ -366,14 +393,12 @@ export default function LoginPage() {
     try {
       if (mode === "login") {
         if (loginSubMode === "password") {
-          // Password Login Flow
           if (password.length < 6) {
             Alert.alert("密码不符合要求", "密码长度至少需要 6 位。");
             setLoading(false);
             return;
           }
           
-          // Direct sign-in using standard Supabase authentication
           const { data, error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password: password
@@ -384,7 +409,6 @@ export default function LoginPage() {
           const user = data.user;
           const userMetadata = user.user_metadata;
           
-          // Read existing local cache to avoid overwriting updated local details with stale server data
           const existingList = await getSavedAccounts();
           const match = existingList.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
 
@@ -416,7 +440,6 @@ export default function LoginPage() {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             const userMetadata = user.user_metadata;
-            // Read existing local cache to avoid overwriting updated local details with stale server data
             const existingList = await getSavedAccounts();
             const match = existingList.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
 
@@ -426,7 +449,7 @@ export default function LoginPage() {
             await saveAccountToList({
               userId: user.id,
               email: email.trim(),
-              password: match?.password || "", // Keep password if it was already stored locally
+              password: match?.password || "",
               username: username,
               avatarUrl: avatarUrl,
               inviteCode: match?.inviteCode || `gk-${user.id.slice(0, 6).toUpperCase()}`
@@ -451,7 +474,6 @@ export default function LoginPage() {
           return;
         }
 
-        // Verify OTP to activate the signup
         const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
           email: email.trim(),
           token: regOtpToken.trim(),
@@ -463,7 +485,6 @@ export default function LoginPage() {
         const user = verifyData.user;
         const generatedCode = `gk-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-        // Sync profile to backend Next.js API
         try {
           await apiPost("/api/auth/profile", {
             userId: user.id,
@@ -475,7 +496,6 @@ export default function LoginPage() {
           console.warn("Backend profile sync failed in index:", syncError);
         }
 
-        // Save account locally
         await saveAccountToList({
           userId: user.id,
           email: email.trim(),
@@ -494,398 +514,448 @@ export default function LoginPage() {
     }
   };
 
-  return (
-    <View style={{ flex: 1, backgroundColor: "#f5f0e8" }}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.bookCover}>
-        <View style={styles.header}>
-          <Image
-            source={{ uri: "https://your-placeholder-logo.png" }}
-            defaultSource={require("../assets/icon.png")}
-            style={styles.logo}
-          />
-          <Text style={styles.title}>怪咖日记</Text>
-          <Text style={styles.subtitle}>纯本地离线的专属 AI 语音手账</Text>
-        </View>
+  // Animated interpolations for fluid, premium welcome -> login screen transitions
+  const welcomeY = onboardingAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -100],
+  });
 
-        {forgotPasswordMode ? (
-          /* Forgot Password View */
-          <View style={styles.form}>
-            <Text style={styles.forgotTitle}>重置专属登录密码</Text>
-            
-            <View style={styles.field}>
-              <Text style={styles.label}>QQ 邮箱</Text>
-              <View style={styles.emailRow}>
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="请输入您的 QQ 邮箱"
-                  placeholderTextColor="#8b7355"
-                  value={recoveryEmail}
-                  onChangeText={setRecoveryEmail}
-                  keyboardType="default"
-                  autoCapitalize="none"
-                  editable={!loading}
-                />
-                <TouchableOpacity
-                  style={[styles.compactCodeButton, (isSendingRecoveryOtp || recoveryCountdown > 0) && styles.disabledCodeButton]}
-                  onPress={handleSendRecoveryOtp}
-                  disabled={isSendingRecoveryOtp || recoveryCountdown > 0 || loading}
-                >
-                  {isSendingRecoveryOtp ? (
-                    <ActivityIndicator size="small" color="#8b7355" />
-                  ) : (
-                    <Text style={styles.compactCodeText}>
-                      {recoveryCountdown > 0 ? `${recoveryCountdown}s` : "获取验证码"}
-                    </Text>
-                  )}
-                </TouchableOpacity>
+  const welcomeOpacity = onboardingAnim.interpolate({
+    inputRange: [0, 0.8, 1],
+    outputRange: [1, 0, 0],
+  });
+
+  const formY = onboardingAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [height, 0],
+  });
+
+  const formOpacity = onboardingAnim.interpolate({
+    inputRange: [0, 0.2, 1],
+    outputRange: [0, 0.4, 1],
+  });
+
+  const renderLoginContent = () => (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+          {/* Welcome Screen Cover Block (Ceremonial Entrance) */}
+          {!showAuthPanel && (
+            <Animated.View style={[styles.welcomeCover, { transform: [{ translateY: welcomeY }], opacity: welcomeOpacity }]}>
+              <View style={styles.welcomeCenter}>
+                <View style={styles.stellarLogoContainer}>
+                  <Ionicons name="sparkles-outline" size={48} color="#ffd88f" style={styles.welcomeLogo} />
+                  <View style={styles.welcomeLogoGlow} />
+                </View>
+                <Text style={styles.welcomeTitle}>Memory Vessel</Text>
+                <Text style={styles.welcomeText}>“ 记忆正在流入今夜 ”</Text>
+                <Text style={styles.welcomeSubtext}>您的专属数字记忆胶囊</Text>
               </View>
-            </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>验证码</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="请输入邮箱收到的6位验证码"
-                placeholderTextColor="#8b7355"
-                value={recoveryOtpToken}
-                onChangeText={setRecoveryOtpToken}
-                keyboardType="number-pad"
-                maxLength={6}
-                editable={!loading}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>设置新密码</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="至少 6 位新密码"
-                placeholderTextColor="#8b7355"
-                value={recoveryPassword}
-                onChangeText={setRecoveryPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!loading}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>确认新密码</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="再次输入新密码"
-                placeholderTextColor="#8b7355"
-                value={recoveryConfirmPassword}
-                onChangeText={setRecoveryConfirmPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!loading}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.submitButton, loading && styles.disabledButton]}
-              onPress={handleRecoveryReset}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#faf6ef" />
-              ) : (
-                <Text style={styles.submitText}>确认重置并开启日记</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.backToLoginBtn}
-              onPress={() => setForgotPasswordMode(false)}
-              disabled={loading}
-            >
-              <Text style={styles.backToLoginText}>返回登录</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          /* Main Login / Register View */
-          <>
-            <View style={styles.tabContainer}>
-              <TouchableOpacity
-                style={[styles.tabButton, mode === "login" && styles.activeTabButton]}
-                onPress={() => setMode("login")}
-                disabled={loading}
-              >
-                <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>登录</Text>
+              <TouchableOpacity style={styles.journeyBtn} activeOpacity={0.8} onPress={() => triggerTransitionToAuth(true)}>
+                <Text style={styles.journeyBtnText}>开启记忆之旅</Text>
+                <Ionicons name="arrow-forward" size={16} color="#0c1324" style={{ marginLeft: 6 }} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tabButton, mode === "register" && styles.activeTabButton]}
-                onPress={() => setMode("register")}
-                disabled={loading}
-              >
-                <Text style={[styles.tabText, mode === "register" && styles.activeTabText]}>注册</Text>
-              </TouchableOpacity>
-            </View>
 
-            {mode === "login" && savedAccounts.length > 0 ? (
-              <View style={styles.savedAccountsSection}>
-                <Text style={styles.savedTitle}>快速切换已存账号</Text>
-                <ScrollView style={styles.savedScroll} nestedScrollEnabled={true}>
-                  {savedAccounts.map((account) => {
-                    const isGradient = account.avatarUrl?.startsWith("gradient:");
-                    const gradientIndex = isGradient ? parseInt(account.avatarUrl!.split(":")[1], 10) : 0;
-                    const gradients = [
-                      "#ff7f50",
-                      "#20b2aa",
-                      "#9370db",
-                      "#6395ee",
-                      "#e06666",
-                      "#b5a642"
-                    ];
-                    const gradientColor = gradients[gradientIndex] || gradients[0];
+              <Text style={styles.welcomeFooter}>私密纯本地存储 · 捕获您内心的独白</Text>
+            </Animated.View>
+          )}
 
-                    return (
-                      <View key={account.email} style={styles.savedCard}>
-                        <TouchableOpacity
-                          style={styles.savedCardPress}
-                          onPress={() => handleLoginWithSaved(account)}
-                          disabled={loading}
-                        >
-                          {isGradient ? (
-                            <View style={[styles.savedAvatar, { backgroundColor: gradientColor }]}>
-                              <Text style={styles.savedAvatarText}>
-                                {(account.username || account.email).slice(0, 1).toUpperCase()}
+          {/* Glassmorphic Auth Panel (Login/Register/Reset Password Forms) */}
+          {showAuthPanel && (
+            <Animated.View style={[styles.authWrapper, { transform: [{ translateY: formY }], opacity: formOpacity }]}>
+              <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+                <View style={styles.glassBookCover}>
+                  <View style={styles.header}>
+                    <TouchableOpacity style={styles.authBackBtn} onPress={() => triggerTransitionToAuth(false)}>
+                      <Ionicons name="chevron-back" size={20} color="#ffdfa9" />
+                      <Text style={styles.authBackText}>返回</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.title}>Memory Vessel</Text>
+                    <Text style={styles.subtitle}>纯本地离线的专属 AI 语音手账</Text>
+                  </View>
+
+                  {forgotPasswordMode ? (
+                    /* Forgot Password View */
+                    <View style={styles.form}>
+                      <Text style={styles.forgotTitle}>重置专属登录密码</Text>
+                      
+                      <View style={styles.field}>
+                        <Text style={styles.label}>QQ 邮箱</Text>
+                        <View style={styles.emailRow}>
+                          <TextInput
+                            style={[styles.input, { flex: 1 }]}
+                            placeholder="请输入您的 QQ 邮箱"
+                            placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                            value={recoveryEmail}
+                            onChangeText={setRecoveryEmail}
+                            keyboardType="default"
+                            autoCapitalize="none"
+                            editable={!loading}
+                          />
+                          <TouchableOpacity
+                            style={[styles.compactCodeButton, (isSendingRecoveryOtp || recoveryCountdown > 0) && styles.disabledCodeButton]}
+                            onPress={handleSendRecoveryOtp}
+                            disabled={isSendingRecoveryOtp || recoveryCountdown > 0 || loading}
+                          >
+                            {isSendingRecoveryOtp ? (
+                              <ActivityIndicator size="small" color="#ffdfa9" />
+                            ) : (
+                              <Text style={styles.compactCodeText}>
+                                {recoveryCountdown > 0 ? `${recoveryCountdown}s` : "获取验证码"}
                               </Text>
-                            </View>
-                          ) : (
-                            <Image source={{ uri: account.avatarUrl }} style={styles.savedAvatarImage} />
-                          )}
-                          <View style={styles.savedInfo}>
-                            <Text style={styles.savedUsername}>{account.username || account.email.split("@")[0]}</Text>
-                            <Text style={styles.savedEmail}>{account.email}</Text>
-                          </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.savedDeleteBtn}
-                          onPress={() => handleDeleteSaved(account.email)}
-                        >
-                          <Ionicons name="trash-outline" size={16} color="#c6604a" />
-                        </TouchableOpacity>
+                            )}
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                    );
-                  })}
-                </ScrollView>
-                <View style={styles.divider}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>或使用其他账号登录</Text>
-                  <View style={styles.dividerLine} />
-                </View>
-              </View>
-            ) : null}
 
-            <View style={styles.form}>
-              {mode === "login" && (
-                /* Password vs OTP Login Sub Tabs Selector */
-                <View style={styles.subTabContainer}>
-                  <TouchableOpacity
-                    style={[styles.subTabButton, loginSubMode === "password" && styles.activeSubTabButton]}
-                    onPress={() => setLoginSubMode("password")}
-                    disabled={loading}
-                  >
-                    <Text style={[styles.subTabText, loginSubMode === "password" && styles.activeSubTabText]}>密码登录</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.subTabButton, loginSubMode === "otp" && styles.activeSubTabButton]}
-                    onPress={() => setLoginSubMode("otp")}
-                    disabled={loading}
-                  >
-                    <Text style={[styles.subTabText, loginSubMode === "otp" && styles.activeSubTabText]}>邮箱登录</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+                      <View style={styles.field}>
+                        <Text style={styles.label}>验证码</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="请输入邮箱收到的6位验证码"
+                          placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                          value={recoveryOtpToken}
+                          onChangeText={setRecoveryOtpToken}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                          editable={!loading}
+                        />
+                      </View>
 
-              {/* QQ Email field */}
-              {mode === "login" ? (
-                <View style={styles.field}>
-                  <Text style={styles.label}>QQ 邮箱</Text>
-                  <View style={styles.emailRow}>
-                    <TextInput
-                      style={[styles.input, { flex: 1 }]}
-                      placeholder="例如 123456@qq.com"
-                      placeholderTextColor="#8b7355"
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="default"
-                      autoCapitalize="none"
-                      editable={!loading}
-                    />
-                    {loginSubMode === "otp" && (
+                      <View style={styles.field}>
+                        <Text style={styles.label}>设置新密码</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="至少 6 位新密码"
+                          placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                          value={recoveryPassword}
+                          onChangeText={setRecoveryPassword}
+                          secureTextEntry
+                          autoCapitalize="none"
+                          editable={!loading}
+                        />
+                      </View>
+
+                      <View style={styles.field}>
+                        <Text style={styles.label}>确认新密码</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="再次输入新密码"
+                          placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                          value={recoveryConfirmPassword}
+                          onChangeText={setRecoveryConfirmPassword}
+                          secureTextEntry
+                          autoCapitalize="none"
+                          editable={!loading}
+                        />
+                      </View>
+
                       <TouchableOpacity
-                        style={[styles.compactCodeButton, (isSendingOtp || otpCountdown > 0) && styles.disabledCodeButton]}
-                        onPress={handleSendLoginOtp}
-                        disabled={isSendingOtp || otpCountdown > 0 || loading}
+                        style={[styles.submitButton, loading && styles.disabledButton]}
+                        onPress={handleRecoveryReset}
+                        disabled={loading}
                       >
-                        {isSendingOtp ? (
-                          <ActivityIndicator size="small" color="#8b7355" />
+                        {loading ? (
+                          <ActivityIndicator color="#0c1324" />
                         ) : (
-                          <Text style={styles.compactCodeText}>
-                            {otpCountdown > 0 ? `${otpCountdown}s` : "获取验证码"}
-                          </Text>
+                          <Text style={styles.submitText}>确认重置并开启日记</Text>
                         )}
                       </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              ) : (
-                /* Registration Email Field with always integrated code button */
-                <View style={styles.field}>
-                  <Text style={styles.label}>QQ 邮箱</Text>
-                  <View style={styles.emailRow}>
-                    <TextInput
-                      style={[styles.input, { flex: 1 }]}
-                      placeholder="例如 123456@qq.com"
-                      placeholderTextColor="#8b7355"
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="default"
-                      autoCapitalize="none"
-                      editable={!loading}
-                    />
-                    <TouchableOpacity
-                      style={[styles.compactCodeButton, (isSendingRegOtp || regCountdown > 0) && styles.disabledCodeButton]}
-                      onPress={handleSendRegOtp}
-                      disabled={isSendingRegOtp || regCountdown > 0 || loading}
-                    >
-                      {isSendingRegOtp ? (
-                        <ActivityIndicator size="small" color="#8b7355" />
-                      ) : (
-                        <Text style={styles.compactCodeText}>
-                          {regCountdown > 0 ? `${regCountdown}s` : "获取验证码"}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
 
-              {/* Password or OTP and fields */}
-              {mode === "login" && loginSubMode === "password" && (
-                <View style={styles.field}>
-                  <View style={styles.labelRow}>
-                    <Text style={styles.label}>密码</Text>
-                    <TouchableOpacity onPress={() => setForgotPasswordMode(true)} disabled={loading}>
-                      <Text style={styles.forgotText}>忘记密码？</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="至少 6 位"
-                    placeholderTextColor="#8b7355"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    autoCapitalize="none"
-                    editable={!loading}
-                  />
-                </View>
-              )}
+                      <TouchableOpacity
+                        style={styles.backToLoginBtn}
+                        onPress={() => setForgotPasswordMode(false)}
+                        disabled={loading}
+                      >
+                        <Text style={styles.backToLoginText}>返回登录</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    /* Main Login / Register View */
+                    <>
+                      <View style={styles.tabContainer}>
+                        <TouchableOpacity
+                          style={[styles.tabButton, mode === "login" && styles.activeTabButton]}
+                          onPress={() => setMode("login")}
+                          disabled={loading}
+                        >
+                          <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>登录</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.tabButton, mode === "register" && styles.activeTabButton]}
+                          onPress={() => setMode("register")}
+                          disabled={loading}
+                        >
+                          <Text style={[styles.tabText, mode === "register" && styles.activeTabText]}>注册</Text>
+                        </TouchableOpacity>
+                      </View>
 
-              {mode === "login" && loginSubMode === "otp" && (
-                <View style={styles.field}>
-                  <Text style={styles.label}>验证码</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="请输入邮箱收到的6位验证码"
-                    placeholderTextColor="#8b7355"
-                    value={otpToken}
-                    onChangeText={setOtpToken}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    editable={!loading}
-                  />
-                </View>
-              )}
+                      {mode === "login" && savedAccounts.length > 0 ? (
+                        <View style={styles.savedAccountsSection}>
+                          <Text style={styles.savedTitle}>快速切换已存账号</Text>
+                          <ScrollView style={styles.savedScroll} nestedScrollEnabled={true}>
+                            {savedAccounts.map((account) => {
+                              const isGradient = account.avatarUrl?.startsWith("gradient:");
+                              const gradientIndex = isGradient ? parseInt(account.avatarUrl!.split(":")[1], 10) : 0;
+                              const gradients = [
+                                "#7c3aed",
+                                "#2563eb",
+                                "#0891b2",
+                                "#059669",
+                                "#dc2626",
+                                "#d97706"
+                              ];
+                              const gradientColor = gradients[gradientIndex] || gradients[0];
 
-              {mode === "register" && (
-                <>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>设置密码</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="至少 6 位"
-                      placeholderTextColor="#8b7355"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry
-                      autoCapitalize="none"
-                      editable={!loading}
-                    />
-                  </View>
+                              return (
+                                <View key={account.email} style={styles.savedCard}>
+                                  <TouchableOpacity
+                                    style={styles.savedCardPress}
+                                    onPress={() => handleLoginWithSaved(account)}
+                                    disabled={loading}
+                                  >
+                                    {isGradient ? (
+                                      <View style={[styles.savedAvatar, { backgroundColor: gradientColor }]}>
+                                        <Text style={styles.savedAvatarText}>
+                                          {(account.username || account.email).slice(0, 1).toUpperCase()}
+                                        </Text>
+                                      </View>
+                                    ) : (
+                                      <Image source={{ uri: account.avatarUrl }} style={styles.savedAvatarImage} />
+                                    )}
+                                    <View style={styles.savedInfo}>
+                                      <Text style={styles.savedUsername}>{account.username || account.email.split("@")[0]}</Text>
+                                      <Text style={styles.savedEmail}>{account.email}</Text>
+                                    </View>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.savedDeleteBtn}
+                                    onPress={() => handleDeleteSaved(account.email)}
+                                  >
+                                    <Ionicons name="trash-outline" size={15} color="#ffa5a5" />
+                                  </TouchableOpacity>
+                                </View>
+                              );
+                            })}
+                          </ScrollView>
+                          <View style={styles.divider}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>或使用其他账号登录</Text>
+                            <View style={styles.dividerLine} />
+                          </View>
+                        </View>
+                      ) : null}
 
-                  <View style={styles.field}>
-                    <Text style={styles.label}>确认密码</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="再次输入密码"
-                      placeholderTextColor="#8b7355"
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      secureTextEntry
-                      autoCapitalize="none"
-                      editable={!loading}
-                    />
-                  </View>
+                      <View style={styles.form}>
+                        {mode === "login" && (
+                          /* Password vs OTP Login Sub Tabs Selector */
+                          <View style={styles.subTabContainer}>
+                            <TouchableOpacity
+                              style={[styles.subTabButton, loginSubMode === "password" && styles.activeSubTabButton]}
+                              onPress={() => setLoginSubMode("password")}
+                              disabled={loading}
+                            >
+                              <Text style={[styles.subTabText, loginSubMode === "password" && styles.activeSubTabText]}>密码登录</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.subTabButton, loginSubMode === "otp" && styles.activeSubTabButton]}
+                              onPress={() => setLoginSubMode("otp")}
+                              disabled={loading}
+                            >
+                              <Text style={[styles.subTabText, loginSubMode === "otp" && styles.activeSubTabText]}>邮箱登录</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
 
-                  <View style={styles.field}>
-                    <Text style={styles.label}>6位激活验证码</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="请输入 QQ 邮箱收到的6位验证码"
-                      placeholderTextColor="#8b7355"
-                      value={regOtpToken}
-                      onChangeText={setRegOtpToken}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                      editable={!loading}
-                    />
-                  </View>
+                        {/* QQ Email field */}
+                        {mode === "login" ? (
+                          <View style={styles.field}>
+                            <Text style={styles.label}>QQ 邮箱</Text>
+                            <View style={styles.emailRow}>
+                              <TextInput
+                                style={[styles.input, { flex: 1 }]}
+                                placeholder="例如 123456@qq.com"
+                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="default"
+                                autoCapitalize="none"
+                                editable={!loading}
+                              />
+                              {loginSubMode === "otp" && (
+                                <TouchableOpacity
+                                  style={[styles.compactCodeButton, (isSendingOtp || otpCountdown > 0) && styles.disabledCodeButton]}
+                                  onPress={handleSendLoginOtp}
+                                  disabled={isSendingOtp || otpCountdown > 0 || loading}
+                                >
+                                  {isSendingOtp ? (
+                                    <ActivityIndicator size="small" color="#ffdfa9" />
+                                  ) : (
+                                    <Text style={styles.compactCodeText}>
+                                      {otpCountdown > 0 ? `${otpCountdown}s` : "获取验证码"}
+                                    </Text>
+                                  )}
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          </View>
+                        ) : (
+                          /* Registration Email Field with always integrated code button */
+                          <View style={styles.field}>
+                            <Text style={styles.label}>QQ 邮箱</Text>
+                            <View style={styles.emailRow}>
+                              <TextInput
+                                style={[styles.input, { flex: 1 }]}
+                                placeholder="例如 123456@qq.com"
+                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="default"
+                                autoCapitalize="none"
+                                editable={!loading}
+                              />
+                              <TouchableOpacity
+                                style={[styles.compactCodeButton, (isSendingRegOtp || regCountdown > 0) && styles.disabledCodeButton]}
+                                onPress={handleSendRegOtp}
+                                disabled={isSendingRegOtp || regCountdown > 0 || loading}
+                              >
+                                {isSendingRegOtp ? (
+                                  <ActivityIndicator size="small" color="#ffdfa9" />
+                                ) : (
+                                  <Text style={styles.compactCodeText}>
+                                    {regCountdown > 0 ? `${regCountdown}s` : "获取验证码"}
+                                  </Text>
+                                )}
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
 
-                  <View style={styles.field}>
-                    <Text style={styles.label}>邀请码 (选填)</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="如有邀请码，请输入"
-                      placeholderTextColor="#8b7355"
-                      value={inviteCode}
-                      onChangeText={setInviteCode}
-                      autoCapitalize="characters"
-                      editable={!loading}
-                    />
-                  </View>
-                </>
-              )}
+                        {/* Password or OTP and fields */}
+                        {mode === "login" && loginSubMode === "password" && (
+                          <View style={styles.field}>
+                            <View style={styles.labelRow}>
+                              <Text style={styles.label}>密码</Text>
+                              <TouchableOpacity onPress={() => setForgotPasswordMode(true)} disabled={loading}>
+                                <Text style={styles.forgotText}>忘记密码？</Text>
+                              </TouchableOpacity>
+                            </View>
+                            <TextInput
+                              style={styles.input}
+                              placeholder="至少 6 位"
+                              placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                              value={password}
+                              onChangeText={setPassword}
+                              secureTextEntry
+                              autoCapitalize="none"
+                              editable={!loading}
+                            />
+                          </View>
+                        )}
 
-              <TouchableOpacity
-                style={[styles.submitButton, loading && styles.disabledButton]}
-                onPress={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#faf6ef" />
-                ) : (
-                  <Text style={styles.submitText}>
-                    {mode === "login" ? "开启日记本" : "创建专属账号"}
+                        {mode === "login" && loginSubMode === "otp" && (
+                          <View style={styles.field}>
+                            <Text style={styles.label}>验证码</Text>
+                            <TextInput
+                              style={styles.input}
+                              placeholder="请输入邮箱收到的6位验证码"
+                              placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                              value={otpToken}
+                              onChangeText={setOtpToken}
+                              keyboardType="number-pad"
+                              maxLength={6}
+                              editable={!loading}
+                            />
+                          </View>
+                        )}
+
+                        {mode === "register" && (
+                          <>
+                            <View style={styles.field}>
+                              <Text style={styles.label}>设置密码</Text>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="至少 6 位"
+                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                autoCapitalize="none"
+                                editable={!loading}
+                              />
+                            </View>
+
+                            <View style={styles.field}>
+                              <Text style={styles.label}>确认密码</Text>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="再次输入密码"
+                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                secureTextEntry
+                                autoCapitalize="none"
+                                editable={!loading}
+                              />
+                            </View>
+
+                            <View style={styles.field}>
+                              <Text style={styles.label}>6位激活验证码</Text>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="请输入 QQ 邮箱收到的6位验证码"
+                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                value={regOtpToken}
+                                onChangeText={setRegOtpToken}
+                                keyboardType="number-pad"
+                                maxLength={6}
+                                editable={!loading}
+                              />
+                            </View>
+
+                            <View style={styles.field}>
+                              <Text style={styles.label}>邀请码 (选填)</Text>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="如有邀请码，请输入"
+                                placeholderTextColor="rgba(255, 223, 169, 0.4)"
+                                value={inviteCode}
+                                onChangeText={setInviteCode}
+                                autoCapitalize="characters"
+                                editable={!loading}
+                              />
+                            </View>
+                          </>
+                        )}
+
+                        <TouchableOpacity
+                          style={[styles.submitButton, loading && styles.disabledButton]}
+                          onPress={handleSubmit}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <ActivityIndicator color="#0c1324" />
+                          ) : (
+                            <Text style={styles.submitText}>
+                              {mode === "login" ? "开启日记本" : "创建专属账号"}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+
+                  <Text style={styles.footerText}>
+                    账号与数据完全私有 · 数据只保留在您当前设备的本地
                   </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+                </View>
+              </ScrollView>
+            </Animated.View>
+          )}
 
-        <Text style={styles.footerText}>
-          账号与数据完全私有 · 数据只保留在您当前设备的本地
-        </Text>
-      </View>
-    </ScrollView>
-
-      {/* Custom Hand-crafted Theme Alert Modal */}
+      {/* Glassmorphic Premium Alert Modal */}
       <Modal
         visible={customAlert.visible}
         transparent={true}
@@ -930,68 +1000,188 @@ export default function LoginPage() {
           </View>
         </View>
       </Modal>
+    </KeyboardAvoidingView>
+  );
+
+  if (isStellar) {
+    return (
+      <View style={{ flex: 1 }}>
+        <StellarBackground>
+          {renderLoginContent()}
+        </StellarBackground>
+      </View>
+    );
+  }
+  return (
+    <View style={{ flex: 1, backgroundColor: "#f5f0e8" }}>
+      {renderLoginContent()}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const staticStyles = StyleSheet.create({
+  // Welcome Screen Cover styles
+  welcomeCover: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 64,
+    paddingHorizontal: 24,
+    zIndex: 10,
+  },
+  welcomeCenter: {
+    alignItems: "center",
+    marginTop: height * 0.12,
+  },
+  stellarLogoContainer: {
+    position: "relative",
+    width: 96,
+    height: 96,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+  },
+  welcomeLogo: {
+    zIndex: 2,
+    textShadowColor: "rgba(255, 216, 143, 0.4)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
+  },
+  welcomeLogoGlow: {
+    position: "absolute",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#ffdfa9",
+    opacity: 0.15,
+    shadowColor: "#ffdfa9",
+    shadowOpacity: 0.8,
+    shadowRadius: 24,
+    elevation: 2,
+    zIndex: 1,
+  },
+  welcomeTitle: {
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontSize: 36,
+    fontWeight: "700",
+    color: "#ffdfa9",
+    letterSpacing: 2,
+    textShadowColor: "rgba(255, 223, 169, 0.2)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  welcomeText: {
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontSize: 18,
+    color: "#e2e8f0",
+    marginTop: 24,
+    fontStyle: "italic",
+    letterSpacing: 1.5,
+  },
+  welcomeSubtext: {
+    fontSize: 12,
+    color: "rgba(255, 223, 169, 0.6)",
+    marginTop: 12,
+    letterSpacing: 1,
+  },
+  journeyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffdfa9",
+    paddingHorizontal: 36,
+    paddingVertical: 16,
+    borderRadius: 30,
+    shadowColor: "#ffdfa9",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  journeyBtnText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#070a18",
+    letterSpacing: 1.5,
+  },
+  welcomeFooter: {
+    fontSize: 10,
+    color: "rgba(255, 223, 169, 0.35)",
+    letterSpacing: 0.8,
+  },
+
+  // Auth panel wrapper styles
+  authWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+  },
   container: {
     flexGrow: 1,
-    backgroundColor: "#f5f0e8", // 牛皮纸主色
     justifyContent: "center",
-    padding: 24,
+    padding: 20,
+    paddingTop: Platform.OS === "ios" ? 48 : 36,
+    paddingBottom: 48,
   },
-  bookCover: {
-    backgroundColor: "#faf6ef",
-    borderWidth: 1.5,
-    borderColor: "#d4c5a9",
-    borderRadius: 20,
+  glassBookCover: {
+    backgroundColor: "rgba(12, 19, 36, 0.8)",
+    borderWidth: 1.2,
+    borderColor: "rgba(255, 223, 169, 0.18)",
+    borderRadius: 24,
     padding: 24,
-    shadowColor: "#2c1810",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 12,
   },
   header: {
     alignItems: "center",
-    marginBottom: 28,
+    marginBottom: 20,
+    position: "relative",
   },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#d4c5a9",
+  authBackBtn: {
+    position: "absolute",
+    left: -4,
+    top: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 10,
+    padding: 4,
+  },
+  authBackText: {
+    fontSize: 13,
+    color: "#ffdfa9",
+    fontWeight: "700",
+    marginLeft: 2,
   },
   title: {
-    fontFamily: "System",
-    fontSize: 28,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    fontSize: 24,
     fontWeight: "800",
-    color: "#2c1810",
+    color: "#ffdfa9",
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 12,
-    color: "#8b7355",
+    fontSize: 11,
+    color: "rgba(255, 223, 169, 0.5)",
     marginTop: 6,
     fontWeight: "600",
   },
   forgotTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
-    color: "#2c1810",
+    color: "#ffdfa9",
     textAlign: "center",
     marginBottom: 12,
   },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "#ede4d5",
+    backgroundColor: "rgba(255, 223, 169, 0.08)",
     borderRadius: 12,
-    padding: 4,
+    padding: 3,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#d4c5a9",
+    borderColor: "rgba(255, 223, 169, 0.12)",
   },
   tabButton: {
     flex: 1,
@@ -1000,28 +1190,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTabButton: {
-    backgroundColor: "#faf6ef",
-    shadowColor: "#2c1810",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: "rgba(255, 223, 169, 0.15)",
+    borderWidth: 0.8,
+    borderColor: "rgba(255, 223, 169, 0.25)",
   },
   tabText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#8b7355",
+    color: "rgba(255, 223, 169, 0.5)",
   },
   activeTabText: {
-    color: "#c6604a", // Clay Red active
+    color: "#ffdfa9",
   },
   subTabContainer: {
     flexDirection: "row",
-    height: 40,
-    paddingBottom: 8,
-    marginBottom: 8,
-    borderBottomWidth: 1.5,
-    borderBottomColor: "#ede4d5",
+    height: 38,
+    paddingBottom: 6,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 223, 169, 0.1)",
   },
   subTabButton: {
     flex: 1,
@@ -1029,16 +1216,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   activeSubTabButton: {
-    borderBottomWidth: 3,
-    borderBottomColor: "#c6604a",
+    borderBottomWidth: 2,
+    borderBottomColor: "#ffdfa9",
   },
   subTabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
-    color: "#8b7355",
+    color: "rgba(255, 223, 169, 0.4)",
   },
   activeSubTabText: {
-    color: "#c6604a",
+    color: "#ffdfa9",
     fontWeight: "800",
   },
   form: {
@@ -1054,25 +1241,26 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
-    color: "#8b7355",
+    color: "rgba(255, 223, 169, 0.6)",
     paddingLeft: 4,
+    letterSpacing: 0.5,
   },
   forgotText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
-    color: "#c6604a",
+    color: "#ffdfa9",
   },
   input: {
-    backgroundColor: "#ede4d5",
-    borderColor: "#d4c5a9",
+    backgroundColor: "rgba(7, 10, 24, 0.6)",
+    borderColor: "rgba(255, 223, 169, 0.15)",
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 46,
-    fontSize: 15,
-    color: "#2c1810",
+    fontSize: 14,
+    color: "#f8fafc",
   },
   emailRow: {
     flexDirection: "row",
@@ -1080,44 +1268,44 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   compactCodeButton: {
-    width: 80,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: "#ede4d5",
-    borderWidth: 1.2,
-    borderColor: "#d4c5a9",
+    width: 84,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 223, 169, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 223, 169, 0.18)",
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 8,
-    elevation: 0,
   },
   disabledCodeButton: {
-    opacity: 0.6,
+    opacity: 0.45,
   },
   compactCodeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
-    color: "#8b7355",
+    color: "#ffdfa9",
   },
   submitButton: {
-    backgroundColor: "#c6604a",
+    backgroundColor: "#ffdfa9",
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 12,
-    shadowColor: "#c6604a",
+    shadowColor: "#ffdfa9",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
     elevation: 4,
   },
   disabledButton: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   submitText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#faf6ef",
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#0c1324",
+    letterSpacing: 0.5,
   },
   backToLoginBtn: {
     alignItems: "center",
@@ -1125,16 +1313,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   backToLoginText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
-    color: "#8b7355",
+    color: "rgba(255, 223, 169, 0.5)",
     textDecorationLine: "underline",
   },
   footerText: {
-    fontSize: 10,
-    color: "#8b7355",
+    fontSize: 9,
+    color: "rgba(255, 223, 169, 0.35)",
     textAlign: "center",
-    marginTop: 24,
+    marginTop: 20,
     opacity: 0.7,
   },
   savedAccountsSection: {
@@ -1142,12 +1330,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   savedTitle: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "700",
-    color: "#8b7355",
+    color: "rgba(255, 223, 169, 0.5)",
     paddingLeft: 4,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   savedScroll: {
     maxHeight: 180,
@@ -1155,8 +1343,8 @@ const styles = StyleSheet.create({
   savedCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ede4d5",
-    borderColor: "#d4c5a9",
+    backgroundColor: "rgba(255, 223, 169, 0.05)",
+    borderColor: "rgba(255, 223, 169, 0.12)",
     borderWidth: 1,
     borderRadius: 14,
     padding: 10,
@@ -1177,7 +1365,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   savedAvatarText: {
-    color: "#faf6ef",
+    color: "#0c1324",
     fontSize: 14,
     fontWeight: "800",
   },
@@ -1186,7 +1374,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#d4c5a9",
+    borderColor: "rgba(255, 223, 169, 0.2)",
   },
   savedInfo: {
     flex: 1,
@@ -1194,19 +1382,19 @@ const styles = StyleSheet.create({
   savedUsername: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#2c1810",
+    color: "#f8fafc",
   },
   savedEmail: {
     fontSize: 11,
-    color: "#8b7355",
+    color: "rgba(255, 223, 169, 0.5)",
     marginTop: 1,
   },
   savedDeleteBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#faf6ef",
+    backgroundColor: "rgba(255, 100, 100, 0.08)",
     borderWidth: 1,
-    borderColor: "#d4c5a9",
+    borderColor: "rgba(255, 100, 100, 0.2)",
   },
   divider: {
     flexDirection: "row",
@@ -1217,49 +1405,49 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#d4c5a9",
-    opacity: 0.5,
+    backgroundColor: "rgba(255, 223, 169, 0.15)",
   },
   dividerText: {
     fontSize: 10,
-    color: "#8b7355",
+    color: "rgba(255, 223, 169, 0.4)",
     marginHorizontal: 10,
     fontWeight: "600",
-    opacity: 0.7,
   },
+
+  // Glassmorphic Modal Alert Styles
   alertOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    backgroundColor: "rgba(3, 4, 10, 0.75)",
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
   },
   alertContainer: {
     width: "85%",
-    backgroundColor: "#faf6ef",
-    borderWidth: 2,
-    borderColor: "#d4c5a9",
-    borderRadius: 18,
+    backgroundColor: "rgba(12, 19, 36, 0.95)",
+    borderWidth: 1.2,
+    borderColor: "rgba(255, 223, 169, 0.2)",
+    borderRadius: 20,
     padding: 20,
     alignItems: "center",
-    shadowColor: "#2c1810",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
     elevation: 6,
   },
   alertTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
-    color: "#2c1810",
+    color: "#ffdfa9",
     textAlign: "center",
     marginBottom: 8,
   },
   alertMessage: {
-    fontSize: 14,
-    color: "#5c4a37",
+    fontSize: 13,
+    color: "rgba(248, 250, 252, 0.85)",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 18,
     marginBottom: 20,
     fontWeight: "500",
   },
@@ -1276,31 +1464,252 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   alertButtonDefault: {
-    backgroundColor: "#8b7355",
-    borderWidth: 1,
-    borderColor: "#8b7355",
+    backgroundColor: "#ffdfa9",
   },
   alertButtonCancel: {
-    backgroundColor: "#ede4d5",
+    backgroundColor: "rgba(255, 223, 169, 0.08)",
     borderWidth: 1,
-    borderColor: "#d4c5a9",
+    borderColor: "rgba(255, 223, 169, 0.15)",
   },
   alertButtonDestructive: {
-    backgroundColor: "#c6604a",
-    borderWidth: 1,
-    borderColor: "#c6604a",
+    backgroundColor: "rgba(220, 38, 38, 0.85)",
   },
   alertButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "800",
   },
   alertButtonTextDefault: {
-    color: "#faf6ef",
+    color: "#0c1324",
   },
   alertButtonTextCancel: {
-    color: "#8b7355",
+    color: "#ffdfa9",
   },
   alertButtonTextDestructive: {
-    color: "#faf6ef",
+    color: "#f8fafc",
   },
 });
+
+const getDynamicStyles = (theme: "stellar" | "kraft") => {
+  const isStellar = theme === "stellar";
+  return {
+    ...staticStyles,
+    welcomeCover: {
+      ...staticStyles.welcomeCover,
+      backgroundColor: isStellar ? "transparent" : "#f5f0e8",
+    },
+    welcomeTitle: {
+      ...staticStyles.welcomeTitle,
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+      fontFamily: isStellar ? (Platform.OS === "ios" ? "Georgia" : "serif") : "System",
+    },
+    welcomeText: {
+      ...staticStyles.welcomeText,
+      color: isStellar ? "#ffd88f" : "#8b7355",
+      fontFamily: isStellar ? (Platform.OS === "ios" ? "Georgia" : "serif") : "System",
+    },
+    welcomeSubtext: {
+      ...staticStyles.welcomeSubtext,
+      color: isStellar ? "rgba(255, 223, 169, 0.45)" : "#8b7355",
+    },
+    journeyBtn: {
+      ...staticStyles.journeyBtn,
+      backgroundColor: isStellar ? "#ffdfa9" : "#c6604a",
+      shadowColor: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    journeyBtnText: {
+      ...staticStyles.journeyBtnText,
+      color: isStellar ? "#0c1324" : "#faf6ef",
+    },
+    welcomeFooter: {
+      ...staticStyles.welcomeFooter,
+      color: isStellar ? "rgba(255, 223, 169, 0.35)" : "#8b7355",
+    },
+    authWrapper: {
+      ...staticStyles.authWrapper,
+      backgroundColor: isStellar ? "transparent" : "#f5f0e8",
+    },
+    container: {
+      ...staticStyles.container,
+      backgroundColor: isStellar ? "transparent" : "#f5f0e8",
+    },
+    glassBookCover: {
+      ...staticStyles.glassBookCover,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.8)" : "#faf6ef",
+      borderWidth: isStellar ? 1.2 : 1,
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+      borderRadius: isStellar ? 24 : 16,
+      shadowColor: isStellar ? "#000" : "#2c1810",
+      shadowOffset: isStellar ? { width: 0, height: 16 } : { width: 0, height: 2 },
+      shadowOpacity: isStellar ? 0.35 : 0.05,
+      shadowRadius: isStellar ? 24 : 6,
+      elevation: isStellar ? 8 : 2,
+    },
+    header: {
+      ...staticStyles.header,
+      borderBottomColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+      borderBottomWidth: isStellar ? 0.5 : 1.5,
+    },
+    authBackBtn: {
+      ...staticStyles.authBackBtn,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.12)" : "#d4c5a9",
+    },
+    authBackText: {
+      ...staticStyles.authBackText,
+      color: isStellar ? "#ffdfa9" : "#8b7355",
+    },
+    title: {
+      ...staticStyles.title,
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+      fontFamily: isStellar ? (Platform.OS === "ios" ? "Georgia" : "serif") : "System",
+    },
+    subtitle: {
+      ...staticStyles.subtitle,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    tabText: {
+      ...staticStyles.tabText,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    activeTabText: {
+      ...staticStyles.activeTabText,
+      color: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    subTabContainer: {
+      ...staticStyles.subTabContainer,
+      borderBottomColor: isStellar ? "rgba(255, 223, 169, 0.1)" : "#ede4d5",
+    },
+    activeSubTabButton: {
+      ...staticStyles.activeSubTabButton,
+      borderBottomColor: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    subTabText: {
+      ...staticStyles.subTabText,
+      color: isStellar ? "rgba(255, 223, 169, 0.4)" : "#8b7355",
+    },
+    activeSubTabText: {
+      ...staticStyles.activeSubTabText,
+      color: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    label: {
+      ...staticStyles.label,
+      color: isStellar ? "rgba(255, 223, 169, 0.6)" : "#8b7355",
+    },
+    forgotText: {
+      ...staticStyles.forgotText,
+      color: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    input: {
+      ...staticStyles.input,
+      backgroundColor: isStellar ? "rgba(7, 10, 24, 0.6)" : "#ede4d5",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.15)" : "#d4c5a9",
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    compactCodeButton: {
+      ...staticStyles.compactCodeButton,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.18)" : "#d4c5a9",
+    },
+    compactCodeText: {
+      ...staticStyles.compactCodeText,
+      color: isStellar ? "#ffdfa9" : "#8b7355",
+    },
+    submitButton: {
+      ...staticStyles.submitButton,
+      backgroundColor: isStellar ? "#ffdfa9" : "#c6604a",
+      shadowColor: isStellar ? "#ffdfa9" : "#c6604a",
+    },
+    submitText: {
+      ...staticStyles.submitText,
+      color: isStellar ? "#0c1324" : "#faf6ef",
+    },
+    backToLoginText: {
+      ...staticStyles.backToLoginText,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    footerText: {
+      ...staticStyles.footerText,
+      color: isStellar ? "rgba(255, 223, 169, 0.35)" : "#8b7355",
+    },
+    savedTitle: {
+      ...staticStyles.savedTitle,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    savedCard: {
+      ...staticStyles.savedCard,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.05)" : "#ede4d5",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.12)" : "#d4c5a9",
+    },
+    savedAvatarText: {
+      ...staticStyles.savedAvatarText,
+      color: isStellar ? "#0c1324" : "#faf6ef",
+    },
+    savedAvatarImage: {
+      ...staticStyles.savedAvatarImage,
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.2)" : "#d4c5a9",
+    },
+    savedUsername: {
+      ...staticStyles.savedUsername,
+      color: isStellar ? "#f8fafc" : "#2c1810",
+    },
+    savedEmail: {
+      ...staticStyles.savedEmail,
+      color: isStellar ? "rgba(255, 223, 169, 0.5)" : "#8b7355",
+    },
+    savedDeleteBtn: {
+      ...staticStyles.savedDeleteBtn,
+      backgroundColor: isStellar ? "rgba(255, 100, 100, 0.08)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 100, 100, 0.2)" : "#d4c5a9",
+    },
+    dividerLine: {
+      ...staticStyles.dividerLine,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.15)" : "#d4c5a9",
+    },
+    dividerText: {
+      ...staticStyles.dividerText,
+      color: isStellar ? "rgba(255, 223, 169, 0.4)" : "#8b7355",
+    },
+    alertOverlay: {
+      ...staticStyles.alertOverlay,
+      backgroundColor: isStellar ? "rgba(3, 4, 10, 0.75)" : "rgba(0, 0, 0, 0.45)",
+    },
+    alertContainer: {
+      ...staticStyles.alertContainer,
+      backgroundColor: isStellar ? "rgba(12, 19, 36, 0.95)" : "#faf6ef",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.2)" : "#d4c5a9",
+    },
+    alertTitle: {
+      ...staticStyles.alertTitle,
+      color: isStellar ? "#ffdfa9" : "#2c1810",
+    },
+    alertMessage: {
+      ...staticStyles.alertMessage,
+      color: isStellar ? "rgba(248, 250, 252, 0.85)" : "#5c4a37",
+    },
+    alertButtonDefault: {
+      ...staticStyles.alertButtonDefault,
+      backgroundColor: isStellar ? "#ffdfa9" : "#8b7355",
+    },
+    alertButtonCancel: {
+      ...staticStyles.alertButtonCancel,
+      backgroundColor: isStellar ? "rgba(255, 223, 169, 0.08)" : "#ede4d5",
+      borderColor: isStellar ? "rgba(255, 223, 169, 0.15)" : "#d4c5a9",
+    },
+    alertButtonDestructive: {
+      ...staticStyles.alertButtonDestructive,
+      backgroundColor: isStellar ? "rgba(220, 38, 38, 0.85)" : "#c6604a",
+    },
+    alertButtonTextDefault: {
+      ...staticStyles.alertButtonTextDefault,
+      color: isStellar ? "#0c1324" : "#faf6ef",
+    },
+    alertButtonTextCancel: {
+      ...staticStyles.alertButtonTextCancel,
+      color: isStellar ? "#ffdfa9" : "#8b7355",
+    },
+    alertButtonTextDestructive: {
+      ...staticStyles.alertButtonTextDestructive,
+      color: isStellar ? "#f8fafc" : "#faf6ef",
+    },
+  };
+};

@@ -331,3 +331,20 @@ export async function removeAccountFromList(email: string): Promise<void> {
   const next = accounts.filter((a) => a.email.toLowerCase() !== email.toLowerCase());
   await writeAsStringAsync(ACCOUNTS_FILE, JSON.stringify(next, null, 2));
 }
+
+const THEME_FILE = `${documentDirectory}app-theme-settings.json`;
+
+export async function getAppTheme(): Promise<string> {
+  try {
+    const raw = await readAsStringAsync(THEME_FILE);
+    const parsed = JSON.parse(raw);
+    return parsed.theme || "stellar"; // default to stellar (星夜)
+  } catch {
+    return "stellar"; // default
+  }
+}
+
+export async function saveAppTheme(theme: string): Promise<string> {
+  await writeAsStringAsync(THEME_FILE, JSON.stringify({ theme }, null, 2));
+  return theme;
+}

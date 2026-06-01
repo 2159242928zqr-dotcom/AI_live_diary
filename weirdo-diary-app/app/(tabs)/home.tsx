@@ -63,6 +63,7 @@ export default function HomeScreen() {
   const [showTagModal, setShowTagModal] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [showPhotoSourceModal, setShowPhotoSourceModal] = useState(false);
+  const [showCreateTypeModal, setShowCreateTypeModal] = useState(false);
   const [diaryTitle, setDiaryTitle] = useState("");
   const [selectedEventTag, setSelectedEventTag] = useState("");
   const [selectedMoodTag, setSelectedMoodTag] = useState("");
@@ -782,6 +783,38 @@ export default function HomeScreen() {
     }
   };
 
+  // Create a blank manual handwritten diary
+  const handleCreateHandwrittenDiary = async () => {
+    try {
+      const local = new Date();
+      const y = local.getFullYear();
+      const m = String(local.getMonth() + 1).padStart(2, "0");
+      const d = String(local.getDate()).padStart(2, "0");
+      const todayDateStr = `${y}-${m}-${d}`;
+      const now = local.toISOString();
+      const newDiaryId = `diary-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      
+      const newDiary: LocalDiary = {
+        id: newDiaryId,
+        title: "今天的手写日记",
+        summary: "手写日记已开启，点击右上角编辑按钮开始记录...",
+        content: "",
+        date: todayDateStr,
+        createdAt: now,
+        imagePath: "",
+        eventTag: "手写",
+        moodTag: "平静",
+        status: "generated", // Mark as generated so it's instantly reviewable & editable
+        messages: [],
+      };
+      
+      await saveDiary(newDiary);
+      router.push(`/diary/${newDiaryId}`);
+    } catch (e) {
+      Alert.alert("创建失败", "无法创建手写日记，请稍后重试。");
+    }
+  };
+
   // Staggered Concentric Gravity Wave Ripple ring interpolates
   const ripple1Scale = ripple1.interpolate({ inputRange: [0, 1], outputRange: [1, 1.55] });
   const ripple1Opacity = ripple1.interpolate({ inputRange: [0, 0.15, 0.8, 1], outputRange: [0, 0.5, 0.22, 0] });
@@ -849,7 +882,7 @@ export default function HomeScreen() {
                 </View>
                 <TouchableOpacity
                   style={styles.addButton}
-                  onPress={() => setShowDashboard(false)}
+                  onPress={() => setShowCreateTypeModal(true)}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="add" size={22} color="#0c1324" />
@@ -893,7 +926,7 @@ export default function HomeScreen() {
               </View>
               <TouchableOpacity
                 style={[styles.addButton, { backgroundColor: "#c6604a", width: 42, height: 42, borderRadius: 21, shadowColor: "#c6604a" }]}
-                onPress={() => router.push("/upload")}
+                onPress={() => setShowCreateTypeModal(true)}
                 activeOpacity={0.8}
               >
                 <Ionicons name="add" size={24} color="#faf6ef" />
@@ -924,6 +957,79 @@ export default function HomeScreen() {
                 </View>
               }
             />
+          </View>
+        )}
+
+        {/* Custom Create Type Selector Modal popup */}
+        {showCreateTypeModal && (
+          <View style={StyleSheet.absoluteFillObject}>
+            <TouchableOpacity 
+              style={styles.modalBackdrop} 
+              activeOpacity={1} 
+              onPress={() => setShowCreateTypeModal(false)}
+            />
+            <View style={styles.exitModalContainer}>
+              <View style={[styles.exitGlassCard, !isStellar && { backgroundColor: "#faf6ef", borderColor: "#d4c5a9" }]}>
+                <Ionicons name="journal-outline" size={32} color={isStellar ? "#ffdfa9" : "#c6604a"} style={{ marginBottom: 12 }} />
+                <Text style={[styles.exitModalTitle, !isStellar && { color: "#2c1810" }]}>选择日记形式</Text>
+                <Text style={[styles.exitModalSub, !isStellar && { color: "#8b7355" }]}>
+                  请选择您今天想记录的手账形式：
+                </Text>
+
+                <View style={styles.exitButtonColumn}>
+                  {/* Option 1: AI Diary */}
+                  <TouchableOpacity
+                    style={[styles.exitPillKeepBtn, !isStellar && { backgroundColor: "#c6604a" }]}
+                    onPress={() => {
+                      setShowCreateTypeModal(false);
+                      if (isStellar) {
+                        setShowDashboard(false);
+                        setTimeout(() => {
+                          setShowPhotoSourceModal(true);
+                        }, 150);
+                      } else {
+                        router.push("/upload");
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="sparkles" size={16} color={isStellar ? "#0c1324" : "#faf6ef"} style={{ marginRight: 6 }} />
+                      <Text style={[styles.exitKeepText, !isStellar && { color: "#faf6ef" }]}>AI 语音日记</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Option 2: Handwritten Diary */}
+                  <TouchableOpacity
+                    style={[
+                      styles.exitPillKeepBtn, 
+                      isStellar 
+                        ? { backgroundColor: "rgba(255, 223, 169, 0.15)", borderWidth: 1, borderColor: "rgba(255, 223, 169, 0.3)" }
+                        : { backgroundColor: "transparent", borderWidth: 1, borderColor: "#d4c5a9" }
+                    ]}
+                    onPress={() => {
+                      setShowCreateTypeModal(false);
+                      handleCreateHandwrittenDiary();
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="create-sharp" size={16} color={isStellar ? "#ffdfa9" : "#c6604a"} style={{ marginRight: 6 }} />
+                      <Text style={[styles.exitKeepText, { color: isStellar ? "#ffdfa9" : "#c6604a" }]}>手动手写日记</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Option 3: Cancel */}
+                  <TouchableOpacity
+                    style={styles.exitCancelBtn}
+                    onPress={() => setShowCreateTypeModal(false)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.exitCancelText, !isStellar && { color: "#8b7355" }]}>取消</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
           </View>
         )}
       </View>
